@@ -26,12 +26,27 @@ func homeLink(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	var wait time.Duration
-	var dataSourceName string
-	flag.DurationVar(&wait, "graceful-timeout", time.Second*15, "the duration for which the server gracefully wait for existing connections to finish - e.g. 15s or 1m")
-	flag.StringVar(&dataSourceName, "postgres-data-source-name", "postgres://bdc:longminabott@localhost/wardrobe?sslmode=disable", "postgres driver source name")
+	var (
+		wait   time.Duration
+		pgHost string
+		pgPort int
+		pgUser string
+		pgPwd  string
+		pgDb   string
+	)
+
+	flag.DurationVar(&wait,
+		"graceful-timeout",
+		time.Second*15,
+		"the duration for which the server gracefully wait for existing connections to finish - e.g. 15s or 1m")
+	flag.StringVar(&pgHost, "pg-host", "localhost", "postgresql host name")
+	flag.IntVar(&pgPort, "pg-port", 5432, "postgresql port")
+	flag.StringVar(&pgUser, "pg-user", "postgres", "postgresql user")
+	flag.StringVar(&pgPwd, "pg-pwd", "bdc", "postgresql password")
+	flag.StringVar(&pgDb, "pg-db", "wardrobe", "postgresql db")
 	flag.Parse()
-	wardrobe.InitDB(dataSourceName)
+	wardrobe.InitDB(fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+		pgHost, pgPort, pgUser, pgPwd, pgDb))
 
 	r := mux.NewRouter().StrictSlash(true)
 	r.HandleFunc("/", homeLink)
