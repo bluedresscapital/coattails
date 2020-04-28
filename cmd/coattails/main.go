@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/bluedresscapital/coattails/pkg/auth"
 	"github.com/bluedresscapital/coattails/pkg/sundress"
+	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
@@ -26,8 +27,11 @@ func homeLink(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	var wait time.Duration
+	var dataSourceName string
 	flag.DurationVar(&wait, "graceful-timeout", time.Second*15, "the duration for which the server gracefully wait for existing connections to finish - e.g. 15s or 1m")
+	flag.StringVar(&dataSourceName, "postgres-data-source-name", "postgres://bdc:longminabott@localhost/wardrobe?sslmode=disable", "postgres driver source name")
 	flag.Parse()
+	wardrobe.InitDB(dataSourceName)
 
 	r := mux.NewRouter().StrictSlash(true)
 	r.HandleFunc("/", homeLink)
@@ -63,6 +67,11 @@ func main() {
 	// Doesn't block if no connections, but will otherwise wait
 	// until the timeout deadline.
 	err := srv.Shutdown(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	err = wardrobe.CloseDB()
 	if err != nil {
 		panic(err)
 	}

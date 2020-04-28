@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"github.com/golang/gddo/httputil/header"
 	"github.com/gorilla/mux"
 	"io"
@@ -12,7 +13,7 @@ import (
 	"strings"
 )
 
-type loginRequest struct {
+type LoginRequest struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
@@ -28,13 +29,14 @@ func RegisterAuthRoutes(r *mux.Router) {
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
-	var l loginRequest
+	var l LoginRequest
 	err := decodeJSONBody(w, r, &l)
 	if err != nil {
 		handleDecodeErr(w, err)
 		return
 	}
 	_, _ = fmt.Fprintf(w, "Login: %+v", l)
+	_ = wardrobe.FetchUser(l.Username, l.Password)
 }
 
 type malformedRequest struct {
