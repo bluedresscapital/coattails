@@ -17,10 +17,10 @@ var (
 )
 
 func init() {
-	sec = newSecret()
+	sec = getSecret()
 }
 
-func newSecret() *secret {
+func getSecret() *secret {
 	//need to change how credentials are stored, rn using my local
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String("us-east-1")},
@@ -40,6 +40,9 @@ func newSecret() *secret {
 }
 
 func Encrypt(s string) string {
+	if true {
+		return s + "_encrypted"
+	}
 	// Encrypt the data
 	result, err := sec.client.Encrypt(&kms.EncryptInput{
 		KeyId:     sec.keyId,
@@ -53,6 +56,9 @@ func Encrypt(s string) string {
 }
 
 func Decrypt(s string) string {
+	if true {
+		return s + "_decrypted"
+	}
 	result, err := sec.client.Decrypt(&kms.DecryptInput{
 		CiphertextBlob: []byte(s),
 	})
