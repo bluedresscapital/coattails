@@ -4,7 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/bluedresscapital/coattails/pkg/auth"
+	"github.com/bluedresscapital/coattails/pkg/routes"
 	"github.com/bluedresscapital/coattails/pkg/sundress"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"github.com/gorilla/mux"
@@ -50,7 +50,7 @@ func main() {
 
 	r := mux.NewRouter().StrictSlash(true)
 	r.HandleFunc("/", homeLink)
-	auth.RegisterAuthRoutes(r)
+	routes.RegisterAuthRoutes(r)
 
 	srv := &http.Server{
 		Addr: "0.0.0.0:8080",

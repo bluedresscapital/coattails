@@ -1,43 +1,15 @@
-package auth
+package routes
 
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"github.com/golang/gddo/httputil/header"
-	"github.com/gorilla/mux"
 	"io"
 	"log"
 	"net/http"
 	"strings"
 )
-
-type LoginRequest struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
-
-// Registers auth routes for coattails server
-func RegisterAuthRoutes(r *mux.Router) {
-	log.Print("Registering auth routes")
-	s := r.PathPrefix("/auth").Subrouter()
-	s.HandleFunc("/login", loginHandler).Methods("POST")
-	s.HandleFunc("/logout", loginHandler).Methods("POST")
-	s.HandleFunc("/register", loginHandler).Methods("POST")
-	s.HandleFunc("/user", loginHandler).Methods("POST")
-}
-
-func loginHandler(w http.ResponseWriter, r *http.Request) {
-	var l LoginRequest
-	err := decodeJSONBody(w, r, &l)
-	if err != nil {
-		handleDecodeErr(w, err)
-		return
-	}
-	_, _ = fmt.Fprintf(w, "Login: %+v", l)
-	_ = wardrobe.FetchUser(l.Username, l.Password)
-}
 
 type malformedRequest struct {
 	status int
