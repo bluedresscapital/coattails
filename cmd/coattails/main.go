@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
+	"github.com/bluedresscapital/coattails/pkg/sundress"
 )
 
 func homeLink(w http.ResponseWriter, r *http.Request) {
@@ -13,6 +14,7 @@ func homeLink(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	println(sundress.Decrypt(sundress.Encrypt("1234")))
 	router := mux.NewRouter().StrictSlash(true)
 	log.Print("Hello world!")
 	fmt.Print("Serving traffic on 8080")
