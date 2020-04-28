@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/bluedresscapital/coattails/pkg/auth"
 	"github.com/bluedresscapital/coattails/pkg/sundress"
 	"github.com/gorilla/mux"
 	"log"
@@ -20,7 +21,7 @@ func homeLink(w http.ResponseWriter, r *http.Request) {
 	log.Printf("cipher: %s", cipher)
 	decryptedCipher := sundress.Decrypt(cipher)
 	log.Printf("Decripted cipher: %s", decryptedCipher)
-	fmt.Fprintf(w, "Welcome home!!!")
+	_, _ = fmt.Fprintf(w, "Welcome home!!!")
 }
 
 func main() {
@@ -29,8 +30,8 @@ func main() {
 	flag.Parse()
 
 	r := mux.NewRouter().StrictSlash(true)
-	// Add your routes as needed
 	r.HandleFunc("/", homeLink)
+	auth.RegisterAuthRoutes(r)
 
 	srv := &http.Server{
 		Addr: "0.0.0.0:8080",
