@@ -1,4 +1,4 @@
 # coattails
 golang backend
 
-`go run cmd/coattails`
+`go run cmd/coattails/main.go`
