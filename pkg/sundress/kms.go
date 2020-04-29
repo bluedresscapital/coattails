@@ -15,15 +15,10 @@ type secret struct {
 }
 
 var (
-	sec        *secret
+	sec *secret
 )
 
-func init() {
-
-	sec = getSecret()
-}
-
-func getSecret() *secret {
+func InitSecret() {
 	//for some reason wasnt pulling region from ~/.aws/config
 	sess, err := session.NewSession(&aws.Config{
 		Region:      aws.String("us-east-1"),
@@ -37,16 +32,13 @@ func getSecret() *secret {
 	svc := kms.New(sess)
 
 	//need to replace the key with bdc stuff
-	return &secret{
+	sec = &secret{
 		keyId:  aws.String(os.Getenv("AWS_KMS_KEYID")),
 		client: svc,
 	}
 }
 
 func Encrypt(s string) string {
-	// if true {
-	// 	return s + "_encrypted"
-	// }
 	// Encrypt the data
 	result, err := sec.client.Encrypt(&kms.EncryptInput{
 		KeyId:     sec.keyId,
@@ -60,9 +52,6 @@ func Encrypt(s string) string {
 }
 
 func Decrypt(s string) string {
-	// if true {
-	// 	return s + "_decrypted"
-	// }
 	result, err := sec.client.Decrypt(&kms.DecryptInput{
 		CiphertextBlob: []byte(s),
 	})
