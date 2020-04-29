@@ -8,6 +8,7 @@ import (
 	"github.com/bluedresscapital/coattails/pkg/sundress"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"github.com/gorilla/mux"
+	_ "github.com/joho/godotenv/autoload"
 	"log"
 	"net/http"
 	"os"
@@ -21,7 +22,7 @@ func homeLink(w http.ResponseWriter, r *http.Request) {
 	cipher := sundress.Encrypt(plaintext)
 	log.Printf("cipher: %s", cipher)
 	decryptedCipher := sundress.Decrypt(cipher)
-	log.Printf("Decripted cipher: %s", decryptedCipher)
+	log.Printf("Decrypted cipher: %s", decryptedCipher)
 	_, _ = fmt.Fprintf(w, "Welcome home!!!")
 }
 
