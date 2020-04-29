@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	_"github.com/joho/godotenv/autoload"
 	"github.com/bluedresscapital/coattails/pkg/routes"
 	"github.com/bluedresscapital/coattails/pkg/sundress"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
@@ -21,7 +22,7 @@ func homeLink(w http.ResponseWriter, r *http.Request) {
 	cipher := sundress.Encrypt(plaintext)
 	log.Printf("cipher: %s", cipher)
 	decryptedCipher := sundress.Decrypt(cipher)
-	log.Printf("Decripted cipher: %s", decryptedCipher)
+	log.Printf("Decrypted cipher: %s", decryptedCipher)
 	_, _ = fmt.Fprintf(w, "Welcome home!!!")
 }
 
