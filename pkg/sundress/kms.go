@@ -5,6 +5,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/kms"
+	"github.com/joho/godotenv"
 	"log"
 	"os"
 )
@@ -15,11 +16,14 @@ type secret struct {
 }
 
 var (
-	sec        *secret
+	sec *secret
 )
 
 func init() {
-
+	envErr := godotenv.Load()
+	if envErr != nil {
+		log.Fatal("Error loading .env file")
+	}
 	sec = getSecret()
 }
 
