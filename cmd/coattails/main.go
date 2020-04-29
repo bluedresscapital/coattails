@@ -4,27 +4,17 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	_"github.com/joho/godotenv/autoload"
 	"github.com/bluedresscapital/coattails/pkg/routes"
-	"github.com/bluedresscapital/coattails/pkg/sundress"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"github.com/gorilla/mux"
+	_ "github.com/joho/godotenv/autoload"
+	"github.com/rs/cors"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
 )
-
-func homeLink(w http.ResponseWriter, r *http.Request) {
-	plaintext := "1234"
-	log.Printf("plaintext: %s", plaintext)
-	cipher := sundress.Encrypt(plaintext)
-	log.Printf("cipher: %s", cipher)
-	decryptedCipher := sundress.Decrypt(cipher)
-	log.Printf("Decrypted cipher: %s", decryptedCipher)
-	_, _ = fmt.Fprintf(w, "Welcome home!!!")
-}
 
 func main() {
 	var (
@@ -48,10 +38,15 @@ func main() {
 	flag.Parse()
 	wardrobe.InitDB(fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		pgHost, pgPort, pgUser, pgPwd, pgDb))
+	wardrobe.InitCache()
 
 	r := mux.NewRouter().StrictSlash(true)
-	r.HandleFunc("/", homeLink)
-	routes.RegisterAuthRoutes(r)
+	handler := cors.New(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:3000", "http://127.0.0.1:3000"},
+		AllowCredentials: true,
+	}).Handler(r)
+
+	routes.RegisterAllRoutes(r)
 
 	srv := &http.Server{
 		Addr: "0.0.0.0:8080",
@@ -59,7 +54,7 @@ func main() {
 		WriteTimeout: time.Second * 15,
 		ReadTimeout:  time.Second * 15,
 		IdleTimeout:  time.Second * 60,
-		Handler:      r, // Pass our instance of gorilla/mux in.
+		Handler:      handler, // Pass our instance of gorilla/mux in.
 	}
 
 	// Run our server in a goroutine so that it doesn't block.

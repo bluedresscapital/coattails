@@ -15,7 +15,7 @@ type secret struct {
 }
 
 var (
-	sec        *secret
+	sec *secret
 )
 
 func init() {
@@ -44,9 +44,6 @@ func getSecret() *secret {
 }
 
 func Encrypt(s string) string {
-	// if true {
-	// 	return s + "_encrypted"
-	// }
 	// Encrypt the data
 	result, err := sec.client.Encrypt(&kms.EncryptInput{
 		KeyId:     sec.keyId,
@@ -60,9 +57,6 @@ func Encrypt(s string) string {
 }
 
 func Decrypt(s string) string {
-	// if true {
-	// 	return s + "_decrypted"
-	// }
 	result, err := sec.client.Decrypt(&kms.DecryptInput{
 		CiphertextBlob: []byte(s),
 	})
