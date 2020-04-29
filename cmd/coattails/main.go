@@ -46,8 +46,8 @@ func main() {
 	flag.StringVar(&pgPwd, "pg-pwd", "bdc", "postgresql password")
 	flag.StringVar(&pgDb, "pg-db", "wardrobe", "postgresql db")
 	flag.Parse()
-	// wardrobe.InitDB(fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-	// 	pgHost, pgPort, pgUser, pgPwd, pgDb))
+	wardrobe.InitDB(fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+		pgHost, pgPort, pgUser, pgPwd, pgDb))
 
 	r := mux.NewRouter().StrictSlash(true)
 	r.HandleFunc("/", homeLink)

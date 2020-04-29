@@ -16,7 +16,6 @@ type secret struct {
 
 var (
 	sec        *secret
-	awsProfile string
 )
 
 func init() {
