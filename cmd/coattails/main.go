@@ -4,11 +4,11 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	_"github.com/joho/godotenv/autoload"
 	"github.com/bluedresscapital/coattails/pkg/routes"
 	"github.com/bluedresscapital/coattails/pkg/sundress"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"github.com/gorilla/mux"
-	_ "github.com/joho/godotenv/autoload"
 	"log"
 	"net/http"
 	"os"
@@ -46,8 +46,8 @@ func main() {
 	flag.StringVar(&pgPwd, "pg-pwd", "bdc", "postgresql password")
 	flag.StringVar(&pgDb, "pg-db", "wardrobe", "postgresql db")
 	flag.Parse()
-	wardrobe.InitDB(fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		pgHost, pgPort, pgUser, pgPwd, pgDb))
+	// wardrobe.InitDB(fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+	// 	pgHost, pgPort, pgUser, pgPwd, pgDb))
 
 	r := mux.NewRouter().StrictSlash(true)
 	r.HandleFunc("/", homeLink)
