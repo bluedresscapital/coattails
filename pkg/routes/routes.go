@@ -11,10 +11,19 @@ import (
 func testHandler(w http.ResponseWriter, r *http.Request) {
 	plaintext := "1234"
 	log.Printf("plaintext: %s", plaintext)
+
 	cipher := sundress.Encrypt(plaintext)
-	log.Printf("cipher: %s", cipher)
+	log.Printf("first cipher: %s", cipher)
+
+	cipher2 := sundress.Encrypt(plaintext)
+	log.Printf("second cipher: %s", cipher2)
+
 	decryptedCipher := sundress.Decrypt(cipher)
-	log.Printf("Decripted cipher: %s", decryptedCipher)
+	log.Printf("Decrypted cipher: %s", decryptedCipher)
+
+	decryptedCipher2 := sundress.Decrypt(cipher2)
+	log.Printf("Decrypted second cipher: %s", decryptedCipher2)
+
 	_, _ = fmt.Fprintf(w, "Welcome home!!!")
 }
 

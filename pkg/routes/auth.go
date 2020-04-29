@@ -67,15 +67,7 @@ func userHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
-	userResponse := UserResponse{Username: *username}
-	js, err := json.Marshal(userResponse)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	_, _ = w.Write(js)
+	writeUserResponseJson(w, *username)
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
@@ -95,7 +87,7 @@ func loginRegisterHelper(w http.ResponseWriter, r *http.Request, loginMode bool)
 		return
 	}
 	// Immediately encrypt password so we don't run it down later
-	cipherPwd := sundress.Encrypt(l.Password)
+	cipherPwd := sundress.Hash(l.Password)
 	tok := new(string)
 	if loginMode {
 		tok, err = auth.Login(l.Username, cipherPwd)
@@ -115,6 +107,19 @@ func loginRegisterHelper(w http.ResponseWriter, r *http.Request, loginMode bool)
 		Value:   *tok,
 		Expires: time.Now().Add(wardrobe.SessionTokenTtl),
 	})
+	writeUserResponseJson(w, l.Username)
+}
+
+func writeUserResponseJson(w http.ResponseWriter, username string) {
+	userResponse := UserResponse{Username: username}
+	js, err := json.Marshal(userResponse)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(js)
 }
 
 // Fetches cookie from request header, if present
