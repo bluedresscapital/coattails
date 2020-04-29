@@ -88,3 +88,19 @@ func decodeJSONBody(w http.ResponseWriter, r *http.Request, dst interface{}) err
 
 	return nil
 }
+
+type StatusResponse struct {
+	status string `json:"status"`
+}
+
+func writeStatusResponseJson(w http.ResponseWriter, status string) {
+	statusResponse := StatusResponse{status: status}
+	js, err := json.Marshal(statusResponse)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(js)
+}

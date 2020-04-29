@@ -47,6 +47,7 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 		Name:   "session_token",
 		MaxAge: -1,
 	})
+	writeStatusResponseJson(w, "success")
 }
 
 func userHandler(w http.ResponseWriter, r *http.Request) {
