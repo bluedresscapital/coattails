@@ -17,8 +17,8 @@ type AuthToken struct {
 }
 
 // Finds user row and returns its id
-func FetchUser(username string, password string) (*int, error) {
-	rows, err := db.Query("SELECT id FROM users WHERE username=$1 and password=$2", username, password)
+func FetchUser(username string, password [32]byte) (*int, error) {
+	rows, err := db.Query("SELECT id FROM users WHERE username=$1 and password=$2", username, password[:])
 	if err != nil {
 		return nil, err
 	}
@@ -36,8 +36,8 @@ func FetchUser(username string, password string) (*int, error) {
 	return id, nil
 }
 
-func CreateUser(username string, password string) error {
-	_, err := db.Exec("INSERT INTO users (username, password) VALUES ($1, $2)", username, password)
+func CreateUser(username string, password [32]byte) error {
+	_, err := db.Exec("INSERT INTO users (username, password) VALUES ($1, $2)", username, password[:])
 	if err != nil {
 		return err
 	}
