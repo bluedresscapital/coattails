@@ -18,12 +18,7 @@ var (
 	sec *secret
 )
 
-func init() {
-
-	sec = getSecret()
-}
-
-func getSecret() *secret {
+func InitSecret() {
 	//for some reason wasnt pulling region from ~/.aws/config
 	sess, err := session.NewSession(&aws.Config{
 		Region:      aws.String("us-east-1"),
@@ -37,7 +32,7 @@ func getSecret() *secret {
 	svc := kms.New(sess)
 
 	//need to replace the key with bdc stuff
-	return &secret{
+	sec = &secret{
 		keyId:  aws.String(os.Getenv("AWS_KMS_KEYID")),
 		client: svc,
 	}

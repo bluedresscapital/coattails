@@ -5,9 +5,10 @@ import (
 	"flag"
 	"fmt"
 	"github.com/bluedresscapital/coattails/pkg/routes"
+	"github.com/bluedresscapital/coattails/pkg/sundress"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"github.com/gorilla/mux"
-	_ "github.com/joho/godotenv/autoload"
+	"github.com/joho/godotenv"
 	"github.com/rs/cors"
 	"log"
 	"net/http"
@@ -17,6 +18,10 @@ import (
 )
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 	var (
 		wait   time.Duration
 		pgHost string
@@ -36,6 +41,7 @@ func main() {
 	flag.StringVar(&pgPwd, "pg-pwd", "bdc", "postgresql password")
 	flag.StringVar(&pgDb, "pg-db", "wardrobe", "postgresql db")
 	flag.Parse()
+	sundress.InitSecret()
 	wardrobe.InitDB(fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		pgHost, pgPort, pgUser, pgPwd, pgDb))
 	wardrobe.InitCache()
