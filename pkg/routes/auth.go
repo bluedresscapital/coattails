@@ -2,7 +2,6 @@ package routes
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/bluedresscapital/coattails/pkg/auth"
 	"github.com/bluedresscapital/coattails/pkg/sundress"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
@@ -54,7 +53,7 @@ func userHandler(w http.ResponseWriter, r *http.Request) {
 	// given auth token, finds user info
 	c, statusCode, err := fetchCookie(r)
 	if err != nil {
-		w.WriteHeader(statusCode)
+		http.Error(w, err.Error(), statusCode)
 		return
 	}
 	username, err := wardrobe.FetchAuthToken(c.Value)
@@ -93,13 +92,13 @@ func loginRegisterHelper(w http.ResponseWriter, r *http.Request, loginMode bool)
 	if loginMode {
 		tok, err = auth.Login(l.Username, cipherPwd)
 		if err != nil {
-			_, _ = fmt.Fprintf(w, "Error logging in: %+v", err)
+			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return
 		}
 	} else {
 		tok, err = auth.Register(l.Username, cipherPwd)
 		if err != nil {
-			_, _ = fmt.Fprintf(w, "Error registering user: %+v", err)
+			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return
 		}
 	}
