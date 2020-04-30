@@ -35,6 +35,7 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 func RegisterAllRoutes(r *mux.Router) {
 	r.HandleFunc("/health", healthHandler)
 	r.HandleFunc("/test", testHandler)
+	r.HandleFunc("/websocket", testWebSocket)
 	// Register all /auth routes
 	registerAuthRoutes(r)
 }

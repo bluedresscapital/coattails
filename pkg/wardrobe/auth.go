@@ -46,7 +46,7 @@ func CreateUser(username string, password [32]byte) error {
 
 // Fetches auth token given user_id. If no auth token is found, will return nil as auth token
 func FetchAuthToken(sessionToken string) (*string, error) {
-	res, err := cache.Do("GET", sessionToken)
+	res, err := cache.Get(sessionToken).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +59,7 @@ func FetchAuthToken(sessionToken string) (*string, error) {
 
 // Sets an expiring auth token into cache
 func SetExpiringAuthToken(username string, token string) error {
-	_, err := cache.Do("SETEX", token, SessionTokenTtl.Seconds(), username)
+	err := cache.SetNX(token, username, SessionTokenTtl).Err()
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func SetExpiringAuthToken(username string, token string) error {
 }
 
 func ClearAuthToken(sessionToken string) error {
-	_, err := cache.Do("DEL", sessionToken)
+	err := cache.Del(sessionToken).Err()
 	if err != nil {
 		return err
 	}
