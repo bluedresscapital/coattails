@@ -1,12 +1,15 @@
 package wardrobe
 
-import "github.com/gomodule/redigo/redis"
+import (
+	"fmt"
+	"github.com/gomodule/redigo/redis"
+)
 
 var cache redis.Conn
 
-func InitCache() {
+func InitCache(host string) {
 	// Initialize the redis connection to a redis instance running on your local machine
-	conn, err := redis.DialURL("redis://localhost")
+	conn, err := redis.DialURL(fmt.Sprintf("redis://%s", host))
 	if err != nil {
 		panic(err)
 	}

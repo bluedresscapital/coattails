@@ -17,18 +17,19 @@ import (
 	"time"
 )
 
-func main() {
+func initDeps() time.Duration {
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
 	var (
-		wait   time.Duration
-		pgHost string
-		pgPort int
-		pgUser string
-		pgPwd  string
-		pgDb   string
+		wait      time.Duration
+		pgHost    string
+		pgPort    int
+		pgUser    string
+		pgPwd     string
+		pgDb      string
+		cacheHost string
 	)
 
 	flag.DurationVar(&wait,
@@ -40,13 +41,19 @@ func main() {
 	flag.StringVar(&pgUser, "pg-user", "postgres", "postgresql user")
 	flag.StringVar(&pgPwd, "pg-pwd", "bdc", "postgresql password")
 	flag.StringVar(&pgDb, "pg-db", "wardrobe", "postgresql db")
+	flag.StringVar(&cacheHost, "redis-host", "localhost", "redis host")
 	flag.Parse()
 	// Initialize singleton instances after parsing flag
 	sundress.InitSecret()
 	wardrobe.InitDB(fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		pgHost, pgPort, pgUser, pgPwd, pgDb))
-	wardrobe.InitCache()
+	wardrobe.InitCache(cacheHost)
 
+	return wait
+}
+
+func main() {
+	wait := initDeps()
 	r := mux.NewRouter().StrictSlash(true)
 	handler := cors.New(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3000", "http://127.0.0.1:3000"},
@@ -84,7 +91,7 @@ func main() {
 	defer cancel()
 	// Doesn't block if no connections, but will otherwise wait
 	// until the timeout deadline.
-	err = srv.Shutdown(ctx)
+	err := srv.Shutdown(ctx)
 	if err != nil {
 		panic(err)
 	}

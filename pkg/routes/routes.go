@@ -27,7 +27,13 @@ func testHandler(w http.ResponseWriter, r *http.Request) {
 	_, _ = fmt.Fprintf(w, "Welcome home!!!")
 }
 
+func healthHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	_, _ = fmt.Fprintf(w, "ping!")
+}
+
 func RegisterAllRoutes(r *mux.Router) {
+	r.HandleFunc("/health", healthHandler)
 	r.HandleFunc("/test", testHandler)
 	// Register all /auth routes
 	registerAuthRoutes(r)
