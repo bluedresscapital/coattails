@@ -8,6 +8,12 @@ import (
 	"os"
 )
 
+/*
+	Could look to make this an interface as we move forward with different stock apis
+	ie make different structs for td, iex, rh apis and implement each of these methods for the
+	different apis via StockAPI interface.
+
+*/
 type Stock struct {
 	Symbol        string  `json:"symbol"`
 	Name          string  `json:"companyName"`
@@ -21,10 +27,11 @@ type HistoricalStock struct {
 	Price float32
 }
 
-var iexUrl = "https://cloud.iexapis.com/stable/stock/%s/quote?token=%s"
+const iexUrl = "https://cloud.iexapis.com/stable/stock/%s/quote?token=%s"
 
 //example for ralles, he should refactor this to better handle error checking etc
-func getCurrentPrice(ticker string) Stock {
+//since this is a large struct, should we perhaps return *Stock?
+func GetCurrentPrice(ticker string) Stock {
 	url := fmt.Sprintf(iexUrl, ticker, os.Getenv("IEX_TOKEN"))
 	resp, err := http.Get(url)
 	if err != nil {
@@ -39,11 +46,12 @@ func getCurrentPrice(ticker string) Stock {
 }
 
 //function that returns HistoricalStock at a certain date
-func getHistoricalPrice(ticker string, date string) HistoricalStock {
-	return nil
+func GetHistoricalPrice(ticker string, date string) HistoricalStock {
+	return HistoricalStock{}
 }
 
 //function that returns a pointer to a slice of HistoricalStock's for a date range
-func getHistoricalRange(ticker string, start string, end string) *[]HistoricalStock {
-	return nil
+//do we need to return *[]*HistoricalStock?
+func GetHistoricalRange(ticker string, start string, end string) *[]HistoricalStock {
+	return &[]HistoricalStock{}
 }
