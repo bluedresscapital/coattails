@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/bluedresscapital/coattails/pkg/routes"
+	"github.com/bluedresscapital/coattails/pkg/stockings"
 	"github.com/bluedresscapital/coattails/pkg/sundress"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"github.com/gorilla/mux"
@@ -58,6 +59,7 @@ func initDeps() time.Duration {
 
 func main() {
 	wait := initDeps()
+	log.Println(stockings.GetCurrentPrice("MELI"))
 	r := mux.NewRouter().StrictSlash(true)
 	handler := cors.New(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3000", "http://127.0.0.1:3000", "http://bdc-web:38001"},
