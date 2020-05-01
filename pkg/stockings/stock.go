@@ -16,9 +16,15 @@ type Stock struct {
 	ChangePercent float32 `json:"changePercent`
 }
 
+type HistoricalStock struct {
+	Date  string
+	Price float32
+}
+
 var iexUrl = "https://cloud.iexapis.com/stable/stock/%s/quote?token=%s"
 
-func GetStockQuote(ticker string) Stock {
+//example for ralles, he should refactor this to better handle error checking etc
+func getCurrentPrice(ticker string) Stock {
 	url := fmt.Sprintf(iexUrl, ticker, os.Getenv("IEX_TOKEN"))
 	resp, err := http.Get(url)
 	if err != nil {
@@ -30,4 +36,14 @@ func GetStockQuote(ticker string) Stock {
 		log.Fatal(err)
 	}
 	return quote
+}
+
+//function that returns HistoricalStock at a certain date
+func getHistoricalPrice(ticker string, date string) HistoricalStock {
+	return nil
+}
+
+//function that returns a pointer to a slice of HistoricalStock's for a date range
+func getHistoricalRange(ticker string, start string, end string) *[]HistoricalStock {
+	return nil
 }
