@@ -30,6 +30,7 @@ func initDeps() time.Duration {
 		pgPwd     string
 		pgDb      string
 		cacheHost string
+		debugNoDb bool
 	)
 
 	flag.DurationVar(&wait,
@@ -42,12 +43,15 @@ func initDeps() time.Duration {
 	flag.StringVar(&pgPwd, "pg-pwd", "bdc", "postgresql password")
 	flag.StringVar(&pgDb, "pg-db", "wardrobe", "postgresql db")
 	flag.StringVar(&cacheHost, "redis-host", "localhost", "redis host")
+	flag.BoolVar(&debugNoDb, "debug-nodb", false, "debug setting")
 	flag.Parse()
 	// Initialize singleton instances after parsing flag
 	sundress.InitSecret()
-	wardrobe.InitDB(fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		pgHost, pgPort, pgUser, pgPwd, pgDb))
-	wardrobe.InitCache(cacheHost)
+	if !debugNoDb {
+		wardrobe.InitDB(fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+			pgHost, pgPort, pgUser, pgPwd, pgDb))
+		wardrobe.InitCache(cacheHost)
+	}
 
 	return wait
 }
