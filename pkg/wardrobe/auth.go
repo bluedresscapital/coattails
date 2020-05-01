@@ -2,6 +2,7 @@ package wardrobe
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 )
 
@@ -36,6 +37,25 @@ func FetchUser(username string, password [32]byte) (*int, error) {
 	return id, nil
 }
 
+func FetchUserById(id int) (*string, error) {
+	rows, err := db.Query("SELECT username FROM users WHERE id=$1", id)
+	if err != nil {
+		return nil, err
+	}
+	if !rows.Next() {
+		return nil, fmt.Errorf("unable to find user with id %d", id)
+	}
+	username := new(string)
+	err = rows.Scan(username)
+	if err != nil {
+		return nil, err
+	}
+	if rows.Next() {
+		return nil, fmt.Errorf("multiple users returned with id %d", id)
+	}
+	return username, nil
+}
+
 func CreateUser(username string, password [32]byte) error {
 	_, err := db.Exec("INSERT INTO users (username, password) VALUES ($1, $2)", username, password[:])
 	if err != nil {
@@ -44,7 +64,7 @@ func CreateUser(username string, password [32]byte) error {
 	return nil
 }
 
-// Fetches auth token given user_id. If no auth token is found, will return nil as auth token
+// TODO DEPRECATE THIS ONCE U GET TO SESSION STUFF
 func FetchAuthToken(sessionToken string) (*string, error) {
 	res, err := cache.Get(sessionToken).Result()
 	if err != nil {
@@ -57,9 +77,24 @@ func FetchAuthToken(sessionToken string) (*string, error) {
 	return tok, nil
 }
 
+// Given cookie, verifies it by fetching in cache
+func VerifyCookie(cookie string) (*int, error) {
+	// Assume we map cookie to userId
+	userId, err := cache.Get(cookie).Result()
+	if err != nil {
+		return nil, err
+	}
+	var i = new(int)
+	*i, err = strconv.Atoi(userId)
+	if err != nil {
+		return nil, err
+	}
+	return i, nil
+}
+
 // Sets an expiring auth token into cache
-func SetExpiringAuthToken(username string, token string) error {
-	err := cache.SetNX(token, username, SessionTokenTtl).Err()
+func SetExpiringAuthToken(token string, userId *int) error {
+	err := cache.SetNX(token, *userId, SessionTokenTtl).Err()
 	if err != nil {
 		return err
 	}

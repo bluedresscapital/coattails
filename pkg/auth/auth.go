@@ -20,12 +20,12 @@ func Register(username string, password [32]byte) (*string, error) {
 }
 
 func _login(username string, password [32]byte) (*string, error) {
-	_, err := wardrobe.FetchUser(username, password)
+	userId, err := wardrobe.FetchUser(username, password)
 	if err != nil {
 		return nil, err
 	}
 	authToken := uuid.New().String()
-	err = wardrobe.SetExpiringAuthToken(username, authToken)
+	err = wardrobe.SetExpiringAuthToken(authToken, userId)
 	if err != nil {
 		return nil, err
 	}

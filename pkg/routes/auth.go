@@ -18,7 +18,7 @@ func registerAuthRoutes(r *mux.Router) {
 	s.HandleFunc("/login", loginHandler).Methods("POST")
 	s.HandleFunc("/logout", logoutHandler).Methods("POST")
 	s.HandleFunc("/register", registerHandler).Methods("POST")
-	s.HandleFunc("/user", userHandler).Methods("POST")
+	s.HandleFunc("/user", authMiddleware(userHandler)).Methods("POST")
 }
 
 type loginRegisterRequest struct {
@@ -49,22 +49,10 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 	writeStatusResponseJson(w, "success")
 }
 
-func userHandler(w http.ResponseWriter, r *http.Request) {
-	// given auth token, finds user info
-	c, statusCode, err := fetchCookie(r)
+func userHandler(userId *int, w http.ResponseWriter, r *http.Request) {
+	username, err := wardrobe.FetchUserById(*userId)
 	if err != nil {
-		http.Error(w, err.Error(), statusCode)
-		return
-	}
-	username, err := wardrobe.FetchAuthToken(c.Value)
-	if err != nil {
-		// If there is an error fetching from cache, return an internal server error status
 		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	if username == nil {
-		// If the session token is not present in cache, return an unauthorized error
-		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 	writeUserResponseJson(w, *username)

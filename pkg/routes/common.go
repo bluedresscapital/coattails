@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/bluedresscapital/coattails/pkg/wardrobe"
+	"github.com/go-redis/redis/v7"
 	"github.com/golang/gddo/httputil/header"
 	"io"
 	"log"
@@ -18,6 +20,39 @@ type malformedRequest struct {
 
 func (mr *malformedRequest) Error() string {
 	return mr.msg
+}
+
+// Middleware wrapper function to fetch userId given cookie. If cookie is either absent or
+// invalid, returns a StatusUnauthorized error
+func authMiddleware(handler func(*int, http.ResponseWriter, *http.Request)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// given auth token, finds user info
+		c, statusCode, err := fetchCookie(r)
+		if err != nil {
+			w.WriteHeader(statusCode)
+			_, _ = fmt.Fprintf(w, err.Error())
+			return
+		}
+		userId, err := wardrobe.VerifyCookie(c.Value)
+		if err != nil {
+			if err == redis.Nil {
+				// This means there wasn't a valid user id mapped by the cookie
+				w.WriteHeader(http.StatusUnauthorized)
+				_, _ = fmt.Fprintf(w, "Invalid session_token cookie: %s", c.Value)
+				return
+			}
+			// If there is an error fetching from cache, return an internal server error status
+			w.WriteHeader(http.StatusInternalServerError)
+			_, _ = fmt.Fprintf(w, err.Error())
+			return
+		}
+		if userId == nil {
+			// If the session token is not present in cache, return an unauthorized error
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		handler(userId, w, r)
+	}
 }
 
 func handleDecodeErr(w http.ResponseWriter, err error) {
