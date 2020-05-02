@@ -130,7 +130,11 @@ type StatusResponse struct {
 
 func writeStatusResponseJson(w http.ResponseWriter, status string) {
 	statusResponse := StatusResponse{status: status}
-	js, err := json.Marshal(statusResponse)
+	writeJsonResponse(w, statusResponse)
+}
+
+func writeJsonResponse(w http.ResponseWriter, v interface{}) {
+	js, err := json.Marshal(v)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

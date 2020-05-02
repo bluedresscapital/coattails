@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"github.com/gorilla/mux"
@@ -26,9 +25,10 @@ func fetchPortfoliosHandler(userId *int, w http.ResponseWriter, r *http.Request)
 	ports, err := wardrobe.FetchPortfoliosByUserId(*userId)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+		log.Printf("Internal server error: %v", err)
 		return
 	}
-	writePortfoliosResponse(w, ports)
+	writeJsonResponse(w, ports)
 }
 
 func createPortfolioHandler(userId *int, w http.ResponseWriter, r *http.Request) {
@@ -50,38 +50,11 @@ func createPortfolioHandler(userId *int, w http.ResponseWriter, r *http.Request)
 		_, _ = fmt.Fprintf(w, "unable to create portfolio: %v", err)
 		return
 	}
-	id, err := wardrobe.FetchPortfolio(*userId, createPortRequest.Name, createPortRequest.Type)
+	port, err := wardrobe.FetchPortfolio(*userId, createPortRequest.Name, createPortRequest.Type)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = fmt.Fprintf(w, "unable to create portfolio: %v", err)
 		return
 	}
-	writePortfolioResponse(w, wardrobe.Portfolio{
-		Id:     *id,
-		Name:   createPortRequest.Name,
-		Type:   createPortRequest.Type,
-		UserId: *userId,
-	})
-}
-
-func writePortfolioResponse(w http.ResponseWriter, portfolio wardrobe.Portfolio) {
-	js, err := json.Marshal(portfolio)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write(js)
-}
-
-func writePortfoliosResponse(w http.ResponseWriter, portfolios []wardrobe.Portfolio) {
-	js, err := json.Marshal(portfolios)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write(js)
+	writeJsonResponse(w, *port)
 }

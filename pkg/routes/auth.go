@@ -23,6 +23,8 @@ func registerAuthRoutes(r *mux.Router) {
 
 	// Register all portfolio routes under /auth
 	registerPortfolioRoutes(s)
+	// Register all transfer routes under /auth
+	registerTransferRoutes(s)
 }
 
 type loginRegisterRequest struct {
