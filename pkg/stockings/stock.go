@@ -2,8 +2,8 @@ package stockings
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"time"
@@ -33,98 +33,101 @@ type HistoricalStocks []HistoricalStock
 const (
 	iexCurrentPriceUrl   = "https://cloud.iexapis.com/stable/stock/%s/quote?token=%s"
 	iexHistoricalDateUrl = "https://cloud.iexapis.com/stable/stock/%s/chart/%s?token=%s"
-	dateLayout    = "20060102"
-	iexDateLayout = "2006-01-02"
+	dateLayout           = "20060102"
+	iexDateLayout        = "2006-01-02"
 )
 
 //example for ralles, he should refactor this to better handle error checking etc
 //since this is a large struct, should we perhaps return *Stock?
-func GetCurrentPrice(ticker string) Stock {
+func GetCurrentPrice(ticker string) (Stock, error) {
 	url := fmt.Sprintf(iexCurrentPriceUrl, ticker, os.Getenv("IEX_TOKEN"))
 	resp, err := http.Get(url)
 	if err != nil {
-		log.Panic("oh no!")
+		return Stock{}, err
 	}
 	if resp.StatusCode != 200 {
-		log.Panic("request error")
+		return Stock{}, errors.New("http resp not 200")
 	}
 	var quote Stock
 	err = json.NewDecoder(resp.Body).Decode(&quote)
 	if err != nil {
-		log.Panic(err)
+		return Stock{}, err
 	}
-	return quote
+	return quote, nil
 }
 
 //function that returns HistoricalStock at a certain date
-func GetHistoricalPrice(ticker string, date string) HistoricalStock {
+func GetHistoricalPrice(ticker string, date string) (HistoricalStock, error) {
 	url := fmt.Sprintf(iexHistoricalDateUrl, ticker, "date/"+date+"?chartByDay=true", os.Getenv("IEX_TOKEN"))
 	resp, err := http.Get(url)
 	if resp.StatusCode != 200 {
-		log.Panic("request error")
+		return HistoricalStock{}, errors.New("http resp not 200")
 	}
 	var historical HistoricalStocks
 	err = json.NewDecoder(resp.Body).Decode(&historical)
 	if err != nil {
-		log.Fatal(err)
+		return HistoricalStock{}, err
 	}
 	if len(historical) != 1 {
-		log.Panic("date is probably wrong")
+		return HistoricalStock{}, errors.New("did not return singular value after unmarshall")
 	}
-	return historical[0]
+	return historical[0], nil
 }
 
 //function that returns a pointer to a slice of HistoricalStock's for a date range
 //do we need to return *[]*HistoricalStock?
-func GetHistoricalRange(ticker string, start string, end string) *HistoricalStocks {
-	rangeQuery := getRange(start)
-	if rangeQuery == "Error" {
-		log.Panic("range error")
+func GetHistoricalRange(ticker string, start string, end string) (*HistoricalStocks, error) {
+	rangeQuery, err := getRange(start)
+	if err != nil {
+		return nil, err
 	}
 	url := fmt.Sprintf(iexHistoricalDateUrl, ticker, rangeQuery, os.Getenv("IEX_TOKEN"))
 	resp, err := http.Get(url)
 	if resp.StatusCode != 200 {
-		log.Panic("request error")
+		return nil, errors.New("http resp not 200")
 	}
 	var historical HistoricalStocks
 	err = json.NewDecoder(resp.Body).Decode(&historical)
 	if err != nil {
-		log.Panic(err)
+		return nil, err
 	}
 	//this is how this would be done in c++...modify param since it's a pointer
-	parseHistoricalRange(&historical, start, end)
-	return &historical
+	err = parseHistoricalRange(&historical, start, end)
+	if err != nil {
+		return nil, err
+	}
+	return &historical, nil
 }
 
 //taken from https://github.com/addisonlynch/iexfinance/blob/master/iexfinance/stocks/historical.py
 //some leap year stuff is fucked up for them so will have to rewrite this later probably
-func getRange(date string) string {
+func getRange(date string) (string, error) {
 	startDate, _ := time.Parse(dateLayout, date)
 	endDate, _ := time.Parse(dateLayout, time.Now().Format(dateLayout))
 	diff := endDate.Sub(startDate)
 	days := int(diff.Hours() / 24)
 	if 0 <= days && days < 6 {
-		return "5d"
+		return "5d", nil
 	} else if 6 <= days && days < 28 {
-		return "1m"
+		return "1m", nil
 	} else if 28 <= days && days < 84 {
-		return "3m"
+		return "3m", nil
 	} else if 84 <= days && days < 168 {
-		return "6m"
+		return "6m", nil
 	} else if 168 <= days && days < 365 {
-		return "1y"
+		return "1y", nil
 	} else if 365 <= days && days < 730 {
-		return "2y"
+		return "2y", nil
 	} else if 730 <= days && days < 1826 {
-		return "5y"
+		return "5y", nil
 	} else if 1826 <= days && days < 5478 {
-		return "max"
+		return "max", nil
 	}
-	return "Error"
+	return "", errors.New("invalid range")
 }
 
 //modifies the parameter
-func parseHistoricalRange(historicalPrices *HistoricalStocks, startDate string, endDate string) {
+func parseHistoricalRange(historicalPrices *HistoricalStocks, startDate string, endDate string) error {
 	startIdx := -1
 	it := 0
 	for startIdx == -1 {
@@ -143,7 +146,11 @@ func parseHistoricalRange(historicalPrices *HistoricalStocks, startDate string, 
 		}
 		it--
 	}
+	if startIdx > endIdx {
+		return errors.New("invalid date range")
+	}
 	*historicalPrices = (*historicalPrices)[startIdx:endIdx]
+	return nil
 }
 
 func translateIexDate(date string) string {
