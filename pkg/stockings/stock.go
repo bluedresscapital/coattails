@@ -46,10 +46,13 @@ func GetCurrentPrice(ticker string) Stock {
 	if err != nil {
 		log.Panic("oh no!")
 	}
+	if resp.StatusCode != 200 {
+		log.Panic("request error")
+	}
 	var quote Stock
 	err = json.NewDecoder(resp.Body).Decode(&quote)
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 	return quote
 }
@@ -58,10 +61,16 @@ func GetCurrentPrice(ticker string) Stock {
 func GetHistoricalPrice(ticker string, date string) HistoricalStock {
 	url := fmt.Sprintf(iexHistoricalDateUrl, ticker, "date/"+date+"?chartByDay=true", os.Getenv("IEX_TOKEN"))
 	resp, err := http.Get(url)
+	if resp.StatusCode != 200 {
+		log.Panic("request error")
+	}
 	var historical HistoricalStocks
 	err = json.NewDecoder(resp.Body).Decode(&historical)
 	if err != nil {
 		log.Fatal(err)
+	}
+	if len(historical) != 1 {
+		log.Panic("date is probably wrong")
 	}
 	return historical[0]
 }
@@ -75,11 +84,15 @@ func GetHistoricalRange(ticker string, start string, end string) *HistoricalStoc
 	}
 	url := fmt.Sprintf(iexHistoricalDateUrl, ticker, rangeQuery, os.Getenv("IEX_TOKEN"))
 	resp, err := http.Get(url)
+	if resp.StatusCode != 200 {
+		log.Panic("request error")
+	}
 	var historical HistoricalStocks
 	err = json.NewDecoder(resp.Body).Decode(&historical)
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
+	//this is how this would be done in c++...modify param since it's a pointer
 	parseHistoricalRange(&historical, start, end)
 	return &historical
 }
