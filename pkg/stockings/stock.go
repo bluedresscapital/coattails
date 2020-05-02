@@ -33,7 +33,6 @@ type HistoricalStocks []HistoricalStock
 const (
 	iexCurrentPriceUrl   = "https://cloud.iexapis.com/stable/stock/%s/quote?token=%s"
 	iexHistoricalDateUrl = "https://cloud.iexapis.com/stable/stock/%s/chart/%s?token=%s"
-	//bonus points if you know what day this is :)
 	dateLayout    = "20060102"
 	iexDateLayout = "2006-01-02"
 )
