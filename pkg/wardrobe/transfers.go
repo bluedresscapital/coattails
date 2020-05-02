@@ -15,14 +15,18 @@ type Transfer struct {
 	Date          time.Time       `json:"date"`
 }
 
-func AddTransfer(uid string, portId int, amount decimal.Decimal, isDeposit bool, manuallyAdded bool, date time.Time) error {
+// Upserts transfer into db - function is idempotent
+func UpsertTransfer(uid string, portId int, amount decimal.Decimal, isDeposit bool, manuallyAdded bool, date time.Time) error {
 	_, err := db.Exec(`
 		INSERT INTO transfers (uid, port_id, amount, is_deposit, manually_added, date) 
-		VALUES ($1,$2,$3,$4,$5,$6)`,
+		VALUES ($1,$2,$3,$4,$5,$6)
+		ON CONFLICT (uid) DO UPDATE
+		SET port_id=$2,amount=$3,is_deposit=$4,manually_added=$5,date=$6`,
 		uid, portId, amount.StringFixedBank(4), isDeposit, manuallyAdded, date)
 	return err
 }
 
+// NOTE(ma): See if we still need this function, currently unused
 func FetchTransferByUid(uid string) (*Transfer, error) {
 	rows, err := db.Query(`
 		SELECT uid, port_id, amount, is_deposit, manually_added, date 
@@ -69,4 +73,9 @@ func FetchTransfersbyUserId(userId int) ([]Transfer, error) {
 		return make([]Transfer, 0), nil
 	}
 	return transfers, nil
+}
+
+func DeleteTransferByUid(uid string) error {
+	_, err := db.Exec(`DELETE FROM transfers WHERE uid=$1`, uid)
+	return err
 }
