@@ -9,6 +9,7 @@ import (
 	"net/http"
 )
 
+// All portfolio routes should be under /auth prefix
 func registerPortfolioRoutes(r *mux.Router) {
 	log.Printf("Registering portfolio routes")
 	s := r.PathPrefix("/portfolio").Subrouter()

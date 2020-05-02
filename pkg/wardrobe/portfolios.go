@@ -53,5 +53,8 @@ func FetchPortfoliosByUserId(userId int) ([]Portfolio, error) {
 		port.UserId = userId
 		ports = append(ports, port)
 	}
+	if ports == nil {
+		return make([]Portfolio, 0), nil
+	}
 	return ports, nil
 }

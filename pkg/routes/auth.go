@@ -15,10 +15,14 @@ import (
 func registerAuthRoutes(r *mux.Router) {
 	log.Print("Registering auth routes")
 	s := r.PathPrefix("/auth").Subrouter()
+
 	s.HandleFunc("/login", loginHandler).Methods("POST")
 	s.HandleFunc("/logout", logoutHandler).Methods("POST")
 	s.HandleFunc("/register", registerHandler).Methods("POST")
 	s.HandleFunc("/user", authMiddleware(userHandler)).Methods("POST")
+
+	// Register all portfolio routes under /auth
+	registerPortfolioRoutes(s)
 }
 
 type loginRegisterRequest struct {

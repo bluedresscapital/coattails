@@ -38,6 +38,4 @@ func RegisterAllRoutes(r *mux.Router) {
 	r.HandleFunc("/websocket", testWebSocket)
 	// Register all /auth routes
 	registerAuthRoutes(r)
-	// Register all /portfolio routes
-	registerPortfolioRoutes(r)
 }
