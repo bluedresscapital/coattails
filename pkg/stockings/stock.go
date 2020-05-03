@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"time"
 )
 
@@ -22,6 +21,7 @@ type Stock struct {
 	Change        float32 `json:"change"`
 	ChangePercent float32 `json:"changePercent`
 }
+
 //test1
 //test2
 type HistoricalStock struct {
@@ -41,7 +41,7 @@ const (
 //example for ralles, he should refactor this to better handle error checking etc
 //since this is a large struct, should we perhaps return *Stock?
 func GetCurrentPrice(ticker string) (Stock, error) {
-	url := fmt.Sprintf(iexCurrentPriceUrl, ticker, os.Getenv("IEX_TOKEN"))
+	url := fmt.Sprintf(iexCurrentPriceUrl, ticker, getKey())
 	resp, err := http.Get(url)
 	if err != nil {
 		return Stock{}, err
@@ -59,7 +59,7 @@ func GetCurrentPrice(ticker string) (Stock, error) {
 
 //function that returns HistoricalStock at a certain date
 func GetHistoricalPrice(ticker string, date string) (HistoricalStock, error) {
-	url := fmt.Sprintf(iexHistoricalDateUrl, ticker, "date/"+date+"?chartByDay=true", os.Getenv("IEX_TOKEN"))
+	url := fmt.Sprintf(iexHistoricalDateUrl, ticker, "date/"+date+"?chartByDay=true", getKey())
 	resp, err := http.Get(url)
 	if resp.StatusCode != 200 {
 		return HistoricalStock{}, errors.New("http resp not 200")
@@ -82,7 +82,7 @@ func GetHistoricalRange(ticker string, start string, end string) (*HistoricalSto
 	if err != nil {
 		return nil, err
 	}
-	url := fmt.Sprintf(iexHistoricalDateUrl, ticker, rangeQuery, os.Getenv("IEX_TOKEN"))
+	url := fmt.Sprintf(iexHistoricalDateUrl, ticker, rangeQuery, getKey())
 	resp, err := http.Get(url)
 	if resp.StatusCode != 200 {
 		return nil, errors.New("http resp not 200")

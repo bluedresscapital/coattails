@@ -24,13 +24,13 @@ func initDeps() time.Duration {
 		log.Fatal("Error loading .env file")
 	}
 	var (
-		wait      time.Duration
-		pgHost    string
-		pgPort    int
-		pgUser    string
-		pgPwd     string
-		pgDb      string
-		cacheHost string
+		wait        time.Duration
+		pgHost      string
+		pgPort      int
+		pgUser      string
+		pgPwd       string
+		pgDb        string
+		cacheHost   string
 		debugNoDeps bool
 	)
 
@@ -49,6 +49,7 @@ func initDeps() time.Duration {
 	flag.Parse()
 	// Initialize singleton instances after parsing flag
 	sundress.InitSecret()
+	stockings.InitKeygen()
 	if debugNoDeps {
 		log.Println("Warning: You are starting a server without a Database and Cache")
 		log.Println("Calls to functions that use a Database or Cache will segfault")
