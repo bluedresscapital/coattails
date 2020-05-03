@@ -14,8 +14,7 @@ func InitKeygen() {
 }
 
 func getKey() string {
-	//need this otherwise it only returns one value lmao
-	rand.Seed(time.Now().UnixNano())
+	rand.Seed(time.Now().UnixNano()) //need this otherwise it only returns one value lmao
 	num := rand.Intn(len(keys))
 	return keys[num]
 }
