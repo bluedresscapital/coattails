@@ -14,7 +14,7 @@ import (
 	different apis via StockAPI interface.
 
 */
-type Stock struct {
+type IexStock struct {
 	Symbol        string  `json:"symbol"`
 	Name          string  `json:"companyName"`
 	LatestPrice   float32 `json:"latestPrice"`
@@ -22,14 +22,12 @@ type Stock struct {
 	ChangePercent float32 `json:"changePercent`
 }
 
-//test1
-//test2
-type HistoricalStock struct {
+type IexHistoricalStock struct {
 	Date  string  `json:"date"`
 	Price float32 `json:"close"`
 }
 
-type HistoricalStocks []HistoricalStock
+type IexHistoricalStocks []IexHistoricalStock
 
 const (
 	iexCurrentPriceUrl        = "https://cloud.iexapis.com/stable/stock/%s/quote?token=%s"
@@ -41,8 +39,8 @@ const (
 )
 
 //example for ralles, he should refactor this to better handle error checking etc
-//since this is a large struct, should we perhaps return *Stock?
-func GetCurrentPrice(ticker string) (*Stock, error) {
+//since this is a large struct, should we perhaps return *IexStock?
+func GetCurrentPrice(ticker string) (*IexStock, error) {
 	url := fmt.Sprintf(iexCurrentPriceUrl, ticker, getKey())
 	resp, err := http.Get(url)
 	if err != nil {
@@ -52,7 +50,7 @@ func GetCurrentPrice(ticker string) (*Stock, error) {
 	if resp.StatusCode != 200 {
 		return nil, errors.New("http resp not 200")
 	}
-	quote := new(Stock)
+	quote := new(IexStock)
 	err = json.NewDecoder(resp.Body).Decode(quote)
 	if err != nil {
 		return nil, err
@@ -61,7 +59,7 @@ func GetCurrentPrice(ticker string) (*Stock, error) {
 }
 
 //function that returns HistoricalStock at a certain date
-func GetHistoricalPrice(ticker string, date string) (*HistoricalStock, error) {
+func GetHistoricalPrice(ticker string, date string) (*IexHistoricalStock, error) {
 
 	url := fmt.Sprintf(iexHistoricalDateUrl, ticker, date, getKey())
 
@@ -73,7 +71,7 @@ func GetHistoricalPrice(ticker string, date string) (*HistoricalStock, error) {
 	if resp.StatusCode != 200 {
 		return nil, errors.New("http resp not 200")
 	}
-	historical := new(HistoricalStocks)
+	historical := new(IexHistoricalStocks)
 	err = json.NewDecoder(resp.Body).Decode(historical)
 	if err != nil {
 		return nil, err
@@ -85,9 +83,9 @@ func GetHistoricalPrice(ticker string, date string) (*HistoricalStock, error) {
 	return &((*historical)[0]), nil
 }
 
-//function that returns a pointer to a slice of HistoricalStock's for a date range
-//do we need to return *[]*HistoricalStock?
-func GetHistoricalRange(ticker string, start string, end string) (*HistoricalStocks, error) {
+//function that returns a pointer to a slice of IexHistoricalStock's for a date range
+//do we need to return *[]*IexHistoricalStock?
+func GetHistoricalRange(ticker string, start string, end string) (*IexHistoricalStocks, error) {
 	rangeQuery, err := getRange(start)
 	if err != nil {
 		return nil, err
@@ -103,7 +101,7 @@ func GetHistoricalRange(ticker string, start string, end string) (*HistoricalSto
 	if resp.StatusCode != 200 {
 		return nil, errors.New("http resp not 200")
 	}
-	historical := new(HistoricalStocks)
+	historical := new(IexHistoricalStocks)
 	err = json.NewDecoder(resp.Body).Decode(historical)
 	if err != nil {
 		return nil, err
@@ -163,7 +161,7 @@ func getRange(date string) (*string, error) {
 
 }
 
-func startOfHistoricalRange(historicalPrices *HistoricalStocks, startDate string) (*int, error) {
+func startOfHistoricalRange(historicalPrices *IexHistoricalStocks, startDate string) (*int, error) {
 	startIdx := -1
 	it := 0
 	for startIdx == -1 && it < len(*historicalPrices) {
@@ -176,7 +174,7 @@ func startOfHistoricalRange(historicalPrices *HistoricalStocks, startDate string
 	return nil, errors.New("Couldn't find a valid start date")
 }
 
-func endOfHistoricalRange(historicalPrices *HistoricalStocks, endDate string) (*int, error) {
+func endOfHistoricalRange(historicalPrices *IexHistoricalStocks, endDate string) (*int, error) {
 	endIdx := -1
 	it := len((*historicalPrices)) - 1
 	for endIdx == -1 && it >= 0 {
