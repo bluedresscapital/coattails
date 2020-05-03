@@ -36,6 +36,7 @@ func RegisterAllRoutes(r *mux.Router) {
 	r.HandleFunc("/health", healthHandler)
 	r.HandleFunc("/test", testHandler)
 	r.HandleFunc("/websocket", testWebSocket)
+	r.HandleFunc("/apitest", apiCheck)
 	// Register all /auth routes
 	registerAuthRoutes(r)
 }

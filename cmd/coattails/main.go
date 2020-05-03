@@ -64,8 +64,6 @@ func initDeps() time.Duration {
 
 func main() {
 	wait := initDeps()
-	log.Println(stockings.GetCurrentPrice("MELI"))
-	log.Println(stockings.GetHistoricalRange("MELI", "20200415", "20200410"))
 	r := mux.NewRouter().StrictSlash(true)
 	handler := cors.New(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3000", "http://127.0.0.1:3000", "http://bdc-web:38001"},

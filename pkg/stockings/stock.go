@@ -32,10 +32,12 @@ type HistoricalStock struct {
 type HistoricalStocks []HistoricalStock
 
 const (
-	iexCurrentPriceUrl   = "https://cloud.iexapis.com/stable/stock/%s/quote?token=%s"
-	iexHistoricalDateUrl = "https://cloud.iexapis.com/stable/stock/%s/chart/%s?token=%s"
-	dateLayout           = "20060102"
-	iexDateLayout        = "2006-01-02"
+	iexCurrentPriceUrl        = "https://cloud.iexapis.com/stable/stock/%s/quote?token=%s"
+	iexHistoricalDateRangeUrl = "https://cloud.iexapis.com/stable/stock/%s/chart/%s?token=%s"
+	iexHistoricalDateUrl      = "https://cloud.iexapis.com/stable/stock/%s/chart/date/%s?chartByDay=true&token=%s"
+	//https://cloud.iexapis.com/stable/stock/MELI/chart/date/20200102?chartByDay=true&token=pk_ec21611ca5f5492e9397b4a1879ff114
+	dateLayout    = "20060102"
+	iexDateLayout = "2006-01-02"
 )
 
 //example for ralles, he should refactor this to better handle error checking etc
@@ -59,7 +61,9 @@ func GetCurrentPrice(ticker string) (Stock, error) {
 
 //function that returns HistoricalStock at a certain date
 func GetHistoricalPrice(ticker string, date string) (HistoricalStock, error) {
-	url := fmt.Sprintf(iexHistoricalDateUrl, ticker, "date/"+date+"?chartByDay=true", getKey())
+
+	url := fmt.Sprintf(iexHistoricalDateUrl, ticker, date, getKey())
+
 	resp, err := http.Get(url)
 	if resp.StatusCode != 200 {
 		return HistoricalStock{}, errors.New("http resp not 200")
@@ -82,7 +86,9 @@ func GetHistoricalRange(ticker string, start string, end string) (*HistoricalSto
 	if err != nil {
 		return nil, err
 	}
-	url := fmt.Sprintf(iexHistoricalDateUrl, ticker, rangeQuery, getKey())
+
+	url := fmt.Sprintf(iexHistoricalDateRangeUrl, ticker, rangeQuery, getKey())
+
 	resp, err := http.Get(url)
 	if resp.StatusCode != 200 {
 		return nil, errors.New("http resp not 200")
@@ -92,6 +98,12 @@ func GetHistoricalRange(ticker string, start string, end string) (*HistoricalSto
 	if err != nil {
 		return nil, err
 	}
+
+	// startIndex := indexOfHistoricalRange(historical, start)
+	// endIndex := indexOfHistoricalRange(historical, end)
+
+	// return historical[startIndex:endIndex], nil
+
 	//this is how this would be done in c++...modify param since it's a pointer
 	err = parseHistoricalRange(&historical, start, end)
 	if err != nil {
@@ -126,6 +138,8 @@ func getRange(date string) (string, error) {
 	}
 	return "", errors.New("invalid range")
 }
+
+// func indexOfHistoricalRange()
 
 //modifies the parameter
 func parseHistoricalRange(historicalPrices *HistoricalStocks, startDate string, endDate string) error {
