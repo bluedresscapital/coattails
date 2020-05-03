@@ -31,7 +31,7 @@ func initDeps() time.Duration {
 		pgPwd     string
 		pgDb      string
 		cacheHost string
-		debugNoDb bool
+		debugNoDeps bool
 	)
 
 	flag.DurationVar(&wait,
@@ -44,11 +44,15 @@ func initDeps() time.Duration {
 	flag.StringVar(&pgPwd, "pg-pwd", "bdc", "postgresql password")
 	flag.StringVar(&pgDb, "pg-db", "wardrobe", "postgresql db")
 	flag.StringVar(&cacheHost, "redis-host", "localhost", "redis host")
-	flag.BoolVar(&debugNoDb, "debug-nodb", false, "debug setting")
+	flag.BoolVar(&debugNoDeps, "run-without-deps", false, "debug setting")
+	//first arg is a pointer, second arg is the value we are checking for, third value is what we set if we don't see the flag, fourth is description
 	flag.Parse()
 	// Initialize singleton instances after parsing flag
 	sundress.InitSecret()
-	if !debugNoDb {
+	if debugNoDeps {
+		log.Println("Warning: You are starting a server without a Database and Cache")
+		log.Println("Calls to functions that use a Database or Cache will segfault")
+	} else {
 		wardrobe.InitDB(fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 			pgHost, pgPort, pgUser, pgPwd, pgDb))
 		wardrobe.InitCache(cacheHost)
