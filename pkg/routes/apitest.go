@@ -12,9 +12,10 @@ func apiCheck(w http.ResponseWriter, r *http.Request) {
 	a, _ := json.Marshal(aObj)
 	fmt.Fprintln(w, string(a))
 
-	bObj, _ := stockings.GetHistoricalRange("MELI", "20200101", "20200105")
+	bObj, err := stockings.GetHistoricalRange("MELI", "20200101", "20200105")
 	b, _ := json.Marshal(bObj)
 	fmt.Fprintln(w, string(b))
+	fmt.Println(err)
 
 	cObj, _ := stockings.GetHistoricalPrice("MELI", "20200102")
 	c, _ := json.Marshal(cObj)

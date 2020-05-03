@@ -93,23 +93,29 @@ func GetHistoricalRange(ticker string, start string, end string) (*HistoricalSto
 	if resp.StatusCode != 200 {
 		return nil, errors.New("http resp not 200")
 	}
-	var historical HistoricalStocks
-	err = json.NewDecoder(resp.Body).Decode(&historical)
+	historical := new(HistoricalStocks)
+	err = json.NewDecoder(resp.Body).Decode(historical)
 	if err != nil {
 		return nil, err
 	}
 
-	// startIndex := indexOfHistoricalRange(historical, start)
-	// endIndex := indexOfHistoricalRange(historical, end)
-
-	// return historical[startIndex:endIndex], nil
-
-	//this is how this would be done in c++...modify param since it's a pointer
-	err = parseHistoricalRange(&historical, start, end)
+	startIndex, err := startOfHistoricalRange(historical, start)
 	if err != nil {
 		return nil, err
 	}
-	return &historical, nil
+
+	endIndex, err := endOfHistoricalRange(historical, end)
+	if err != nil {
+		return nil, err
+	}
+
+	if *startIndex > *endIndex {
+		return nil, errors.New("Invalid range")
+	}
+
+	*historical = (*historical)[*startIndex:*endIndex]
+
+	return historical, nil
 }
 
 //taken from https://github.com/addisonlynch/iexfinance/blob/master/iexfinance/stocks/historical.py
@@ -139,34 +145,60 @@ func getRange(date string) (string, error) {
 	return "", errors.New("invalid range")
 }
 
-// func indexOfHistoricalRange()
-
-//modifies the parameter
-func parseHistoricalRange(historicalPrices *HistoricalStocks, startDate string, endDate string) error {
+func startOfHistoricalRange(historicalPrices *HistoricalStocks, startDate string) (*int, error) {
 	startIdx := -1
 	it := 0
-	for startIdx == -1 {
+	for startIdx == -1 && it < len(*historicalPrices) {
 		translated := translateIexDate((*historicalPrices)[it].Date)
 		if translated >= startDate {
-			startIdx = it
+			return &it, nil
 		}
 		it++
 	}
+	return nil, errors.New("Couldn't find a valid start date")
+}
+
+func endOfHistoricalRange(historicalPrices *HistoricalStocks, endDate string) (*int, error) {
 	endIdx := -1
-	it = len((*historicalPrices)) - 1
-	for endIdx == -1 {
+	it := len((*historicalPrices)) - 1
+	for endIdx == -1 && it >= 0 {
 		translated := translateIexDate((*historicalPrices)[it].Date)
 		if translated <= endDate {
-			endIdx = it + 1
+			it += 1
+			return &it, nil
 		}
 		it--
 	}
-	if startIdx > endIdx {
-		return errors.New("invalid date range")
-	}
-	*historicalPrices = (*historicalPrices)[startIdx:endIdx]
-	return nil
+
+	return nil, errors.New("Couldn't find a valid end date")
 }
+
+//modifies the parameter
+// func parseHistoricalRange(historicalPrices *HistoricalStocks, startDate string, endDate string) error {
+// 	startIdx := -1
+// 	it := 0
+// 	for startIdx == -1 {
+// 		translated := translateIexDate((*historicalPrices)[it].Date)
+// 		if translated >= startDate {
+// 			startIdx = it
+// 		}
+// 		it++
+// 	}
+// 	endIdx := -1
+// 	it = len((*historicalPrices)) - 1
+// 	for endIdx == -1 {
+// 		translated := translateIexDate((*historicalPrices)[it].Date)
+// 		if translated <= endDate {
+// 			endIdx = it + 1
+// 		}
+// 		it--
+// 	}
+// 	if startIdx > endIdx {
+// 		return errors.New("invalid date range")
+// 	}
+// 	*historicalPrices = (*historicalPrices)[startIdx:endIdx]
+// 	return nil
+// }
 
 func translateIexDate(date string) string {
 	startDate, _ := time.Parse(iexDateLayout, date)
