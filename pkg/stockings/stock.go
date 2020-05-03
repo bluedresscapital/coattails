@@ -23,6 +23,7 @@ type Stock struct {
 	ChangePercent float32 `json:"changePercent`
 }
 //test1
+//test2
 type HistoricalStock struct {
 	Date  string  `json:"date"`
 	Price float32 `json:"close"`
