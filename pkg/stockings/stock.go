@@ -48,6 +48,7 @@ func GetCurrentPrice(ticker string) (*Stock, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	if resp.StatusCode != 200 {
 		return nil, errors.New("http resp not 200")
 	}
@@ -65,6 +66,10 @@ func GetHistoricalPrice(ticker string, date string) (*HistoricalStock, error) {
 	url := fmt.Sprintf(iexHistoricalDateUrl, ticker, date, getKey())
 
 	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+
 	if resp.StatusCode != 200 {
 		return nil, errors.New("http resp not 200")
 	}
@@ -88,9 +93,13 @@ func GetHistoricalRange(ticker string, start string, end string) (*HistoricalSto
 		return nil, err
 	}
 
-	url := fmt.Sprintf(iexHistoricalDateRangeUrl, ticker, rangeQuery, getKey())
+	url := fmt.Sprintf(iexHistoricalDateRangeUrl, ticker, *rangeQuery, getKey())
 
 	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+
 	if resp.StatusCode != 200 {
 		return nil, errors.New("http resp not 200")
 	}
@@ -121,29 +130,37 @@ func GetHistoricalRange(ticker string, start string, end string) (*HistoricalSto
 
 //taken from https://github.com/addisonlynch/iexfinance/blob/master/iexfinance/stocks/historical.py
 //some leap year stuff is fucked up for them so will have to rewrite this later probably
-func getRange(date string) (string, error) {
+func getRange(date string) (*string, error) {
 	startDate, _ := time.Parse(dateLayout, date)
 	endDate, _ := time.Parse(dateLayout, time.Now().Format(dateLayout))
 	diff := endDate.Sub(startDate)
 	days := int(diff.Hours() / 24)
+	dayRange := ""
+
 	if 0 <= days && days < 6 {
-		return "5d", nil
+		dayRange = "5d"
 	} else if 6 <= days && days < 28 {
-		return "1m", nil
+		dayRange = "1m"
 	} else if 28 <= days && days < 84 {
-		return "3m", nil
+		dayRange = "3m"
 	} else if 84 <= days && days < 168 {
-		return "6m", nil
+		dayRange = "6m"
 	} else if 168 <= days && days < 365 {
-		return "1y", nil
+		dayRange = "1y"
 	} else if 365 <= days && days < 730 {
-		return "2y", nil
+		dayRange = "2y"
 	} else if 730 <= days && days < 1826 {
-		return "5y", nil
+		dayRange = "5y"
 	} else if 1826 <= days && days < 5478 {
-		return "max", nil
+		dayRange = "max"
 	}
-	return "", errors.New("invalid range")
+
+	if dayRange == "" {
+		return nil, errors.New("invalid range")
+	}
+
+	return &dayRange, nil
+
 }
 
 func startOfHistoricalRange(historicalPrices *HistoricalStocks, startDate string) (*int, error) {
