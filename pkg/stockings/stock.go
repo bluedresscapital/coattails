@@ -42,41 +42,42 @@ const (
 
 //example for ralles, he should refactor this to better handle error checking etc
 //since this is a large struct, should we perhaps return *Stock?
-func GetCurrentPrice(ticker string) (Stock, error) {
+func GetCurrentPrice(ticker string) (*Stock, error) {
 	url := fmt.Sprintf(iexCurrentPriceUrl, ticker, getKey())
 	resp, err := http.Get(url)
 	if err != nil {
-		return Stock{}, err
+		return nil, err
 	}
 	if resp.StatusCode != 200 {
-		return Stock{}, errors.New("http resp not 200")
+		return nil, errors.New("http resp not 200")
 	}
-	var quote Stock
-	err = json.NewDecoder(resp.Body).Decode(&quote)
+	quote := new(Stock)
+	err = json.NewDecoder(resp.Body).Decode(quote)
 	if err != nil {
-		return Stock{}, err
+		return nil, err
 	}
 	return quote, nil
 }
 
 //function that returns HistoricalStock at a certain date
-func GetHistoricalPrice(ticker string, date string) (HistoricalStock, error) {
+func GetHistoricalPrice(ticker string, date string) (*HistoricalStock, error) {
 
 	url := fmt.Sprintf(iexHistoricalDateUrl, ticker, date, getKey())
 
 	resp, err := http.Get(url)
 	if resp.StatusCode != 200 {
-		return HistoricalStock{}, errors.New("http resp not 200")
+		return nil, errors.New("http resp not 200")
 	}
-	var historical HistoricalStocks
-	err = json.NewDecoder(resp.Body).Decode(&historical)
+	historical := new(HistoricalStocks)
+	err = json.NewDecoder(resp.Body).Decode(historical)
 	if err != nil {
-		return HistoricalStock{}, err
+		return nil, err
 	}
-	if len(historical) != 1 {
-		return HistoricalStock{}, errors.New("did not return singular value after unmarshall")
+	if len(*historical) != 1 {
+		return nil, errors.New("did not return singular value after unmarshall")
 	}
-	return historical[0], nil
+
+	return &((*historical)[0]), nil
 }
 
 //function that returns a pointer to a slice of HistoricalStock's for a date range
@@ -172,33 +173,6 @@ func endOfHistoricalRange(historicalPrices *HistoricalStocks, endDate string) (*
 
 	return nil, errors.New("Couldn't find a valid end date")
 }
-
-//modifies the parameter
-// func parseHistoricalRange(historicalPrices *HistoricalStocks, startDate string, endDate string) error {
-// 	startIdx := -1
-// 	it := 0
-// 	for startIdx == -1 {
-// 		translated := translateIexDate((*historicalPrices)[it].Date)
-// 		if translated >= startDate {
-// 			startIdx = it
-// 		}
-// 		it++
-// 	}
-// 	endIdx := -1
-// 	it = len((*historicalPrices)) - 1
-// 	for endIdx == -1 {
-// 		translated := translateIexDate((*historicalPrices)[it].Date)
-// 		if translated <= endDate {
-// 			endIdx = it + 1
-// 		}
-// 		it--
-// 	}
-// 	if startIdx > endIdx {
-// 		return errors.New("invalid date range")
-// 	}
-// 	*historicalPrices = (*historicalPrices)[startIdx:endIdx]
-// 	return nil
-// }
 
 func translateIexDate(date string) string {
 	startDate, _ := time.Parse(iexDateLayout, date)
