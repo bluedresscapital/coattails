@@ -1,8 +1,8 @@
 package stockings
 
 import (
-	"time"
 	"github.com/shopspring/decimal"
+	"time"
 )
 
 /*
@@ -14,21 +14,21 @@ import (
 
 type StockAPI interface {
 	GetCurrentPrice(ticker string) (*Stock, error)
-	GetHistoricalPrice(ticker string, date time.Time) (*HistoricalStock, error) 
+	GetHistoricalPrice(ticker string, date time.Time) (*HistoricalStock, error)
 	GetHistoricalRange(ticker string, start time.Time, end time.Time) (*HistoricalStocks, error)
 }
 
 type Stock struct {
-	Symbol        string  
-    Name          string  
-    LatestPrice   decimal.Decimal 
-    Change        float32 
-    ChangePercent float32 
+	Symbol        string
+	Name          string
+	LatestPrice   decimal.Decimal
+	Change        float32
+	ChangePercent float32
 }
 
 type HistoricalStock struct {
-    Date  time.Time  
-    Price decimal.Decimal 
+	Date  time.Time
+	Price decimal.Decimal
 }
 
 type HistoricalStocks []HistoricalStock
