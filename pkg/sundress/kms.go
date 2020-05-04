@@ -54,6 +54,7 @@ func initSecret() {
 }
 
 func Encrypt(s string) []byte {
+	log.Print("Calling kms to encrpyt string!")
 	// Encrypt the data
 	result, err := sec.client.Encrypt(&kms.EncryptInput{
 		KeyId:     sec.keyId,
@@ -67,6 +68,7 @@ func Encrypt(s string) []byte {
 }
 
 func Decrypt(s []byte) string {
+	log.Print("Calling kms to decrypt string!")
 	result, err := sec.client.Decrypt(&kms.DecryptInput{
 		CiphertextBlob: s,
 	})

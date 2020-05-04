@@ -27,6 +27,8 @@ func registerAuthRoutes(r *mux.Router) {
 	registerTransferRoutes(s)
 	// Register all order routes under /auth
 	registerOrderRoutes(s)
+	// Register all tda routes under /auth
+	registerTDARoutes(s)
 }
 
 type loginRegisterRequest struct {

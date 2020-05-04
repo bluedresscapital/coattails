@@ -48,8 +48,6 @@ func initDeps() time.Duration {
 	//first arg is a pointer, second arg is the value we are checking for, third value is what we set if we don't see the flag, fourth is description
 	flag.Parse()
 	// Initialize singleton instances after parsing flag
-
-	sundress.InitSecret()
 	stockings.InitKeygen()
 	if debugNoDeps {
 		log.Println("Warning: You are starting a server without a Database and Cache")
@@ -89,6 +87,9 @@ func main() {
 		}
 	}()
 
+	// NOTE(ma): It's important to initialize sundress AFTER all startup routines are done. In case we run into
+	// a crashloop, we don't want to make unnecessary requests to kms due to our monthly limit
+	sundress.InitSundress()
 	c := make(chan os.Signal, 1)
 	// We'll accept graceful shutdowns when quit via SIGINT (Ctrl+C)
 	// SIGKILL, SIGQUIT or SIGTERM (Ctrl+/) will not be caught.
