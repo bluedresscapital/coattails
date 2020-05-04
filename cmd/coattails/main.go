@@ -48,6 +48,7 @@ func initDeps() time.Duration {
 	//first arg is a pointer, second arg is the value we are checking for, third value is what we set if we don't see the flag, fourth is description
 	flag.Parse()
 	// Initialize singleton instances after parsing flag
+
 	sundress.InitSecret()
 	stockings.InitKeygen()
 	if debugNoDeps {
