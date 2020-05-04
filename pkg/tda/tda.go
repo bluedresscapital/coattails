@@ -17,7 +17,7 @@ func InitTDAccount(userId int, portId int, code string, clientId string) error {
 	if auth.RefreshToken == "" || auth.AccessToken == "" {
 		return fmt.Errorf("invalid td auth credentials: %s, %s", code, clientId)
 	}
-	return wardrobe.UpsertTDAccount(userId, portId, clientId, auth.RefreshToken)
+	return wardrobe.UpsertTDAccount(userId, clientId, auth.RefreshToken)
 }
 
 func FakeRequest(userId int, tdAccountId int) error {
@@ -30,7 +30,7 @@ func FakeRequest(userId int, tdAccountId int) error {
 		return err
 	}
 
-	err = wardrobe.UpsertTDAccount(userId, tdAccount.PortId, tdAccount.ClientId, auth.RefreshToken)
+	err = wardrobe.UpsertTDAccount(userId, tdAccount.ClientId, auth.RefreshToken)
 	if err != nil {
 		return err
 	}

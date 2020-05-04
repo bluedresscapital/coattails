@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"fmt"
 	"github.com/bluedresscapital/coattails/pkg/tda"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"github.com/gorilla/mux"
@@ -21,7 +20,7 @@ func fetchTDAccountsHandler(userId *int, w http.ResponseWriter, r *http.Request)
 	accounts, err := wardrobe.FetchTDAccountsByUserId(*userId)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		_, _ = fmt.Fprintf(w, "error in fetching td accounts: %v", err)
+		log.Printf("error in fetching td accounts: %v", err)
 		return
 	}
 	writeJsonResponse(w, accounts)
