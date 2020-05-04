@@ -102,7 +102,7 @@ func deleteTransferHandler(userId *int, w http.ResponseWriter, r *http.Request) 
 	}
 	if port.UserId != *userId {
 		w.WriteHeader(http.StatusUnauthorized)
-		log.Printf("Unauthorized delete of transfer by user %d", userId)
+		log.Printf("Unauthorized delete of transfer by user %d", *userId)
 		return
 	}
 	err = wardrobe.DeleteTransferByUid(deleteTransferRequest.Uid)

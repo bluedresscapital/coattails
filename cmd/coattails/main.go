@@ -44,11 +44,10 @@ func initDeps() time.Duration {
 	flag.StringVar(&cacheHost, "redis-host", "localhost", "redis host")
 	flag.Parse()
 	// Initialize singleton instances after parsing flag
-	sundress.InitSecret()
+	sundress.InitSundress()
 	wardrobe.InitDB(fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		pgHost, pgPort, pgUser, pgPwd, pgDb))
 	wardrobe.InitCache(cacheHost)
-
 	return wait
 }
 

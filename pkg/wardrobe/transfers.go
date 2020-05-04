@@ -53,10 +53,9 @@ func FetchTransferByUid(uid string) (*Transfer, error) {
 func FetchTransfersbyUserId(userId int) ([]Transfer, error) {
 	rows, err := db.Query(`
 		SELECT uid, port_id, amount, is_deposit, manually_added, date 
-		FROM transfers 
-		JOIN (SELECT id FROM portfolios WHERE user_id=$1) a ON
-		transfers.port_id=a.id`,
-		userId)
+		FROM transfers t
+		JOIN portfolios p ON t.port_id=p.id
+		WHERE p.user_id=$1`, userId)
 	if err != nil {
 		return nil, err
 	}

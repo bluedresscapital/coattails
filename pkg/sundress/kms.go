@@ -1,6 +1,7 @@
 package sundress
 
 import (
+	"encoding/hex"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -15,22 +16,36 @@ type secret struct {
 }
 
 var (
-	sec *secret
+	sec     *secret
+	dataKey string
 )
 
-func InitSecret() {
+func InitSundress() {
+	initSecret()
+	initDataKey()
+}
+
+func initDataKey() {
+	log.Println("Initializing Bdc datakey")
+	cipherStr := os.Getenv("BDC_CIPHER_KEY")
+	cipher, err := hex.DecodeString(cipherStr)
+	if err != nil {
+		log.Fatalf("Unable to decode cipher string: %v", err)
+	}
+	dataKey = Decrypt(cipher)
+}
+
+func initSecret() {
+	log.Println("Initializing Secret...")
 	//for some reason wasnt pulling region from ~/.aws/config
 	sess, err := session.NewSession(&aws.Config{
 		Region:      aws.String("us-east-1"),
 		Credentials: credentials.NewStaticCredentials(os.Getenv("AWS_ACCESS_KEY_ID"), os.Getenv("AWS_SECRET_ACCESS_KEY"), ""),
 	})
-
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	svc := kms.New(sess)
-
 	//need to replace the key with bdc stuff
 	sec = &secret{
 		keyId:  aws.String(os.Getenv("AWS_KMS_KEYID")),
@@ -38,7 +53,7 @@ func InitSecret() {
 	}
 }
 
-func Encrypt(s string) string {
+func Encrypt(s string) []byte {
 	// Encrypt the data
 	result, err := sec.client.Encrypt(&kms.EncryptInput{
 		KeyId:     sec.keyId,
@@ -48,12 +63,12 @@ func Encrypt(s string) string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return string(result.CiphertextBlob)
+	return result.CiphertextBlob
 }
 
-func Decrypt(s string) string {
+func Decrypt(s []byte) string {
 	result, err := sec.client.Decrypt(&kms.DecryptInput{
-		CiphertextBlob: []byte(s),
+		CiphertextBlob: s,
 	})
 
 	if err != nil {
