@@ -49,7 +49,7 @@ func initDeps() time.Duration {
 	flag.Parse()
 	// Initialize singleton instances after parsing flag
 
-	sundress.InitSecret()
+	sundress.InitSundress()
 	stockings.InitKeygen()
 	if debugNoDeps {
 		log.Println("Warning: You are starting a server without a Database and Cache")
