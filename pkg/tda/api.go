@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/bluedresscapital/coattails/pkg/wardrobe"
+	"github.com/shopspring/decimal"
 	"io/ioutil"
+	"log"
 	"net/http"
 	url2 "net/url"
 )
@@ -75,4 +78,49 @@ func FetchRefreshTokenUsingAuthCode(code string, clientId string) (*AuthResponse
 		return nil, err
 	}
 	return &auth, nil
+}
+
+type TDTransactions []TDTransactionResponse
+
+type TDTransactionResponse struct {
+	OrderDate       string            `json:"orderDate"`
+	TransactionId   string            `json:"transactionId"`
+	TransactionDate string            `json:transactiondate`
+	TransactionItem TDTransactionItem `json:"transactionItem"`
+	Type            string            `json:"type"`
+}
+
+type TDTransactionItem struct {
+	Amount      decimal.Decimal             `json:"amount"`
+	Instrument  TDTransactionItemInstrument `json:"instrument"`
+	Instruction string                      `json:"instruction"`
+}
+
+type TDTransactionItemInstrument struct {
+	Symbol string `json:"symbol"`
+}
+
+func ScrapeOrders(authTok string, accountId string) ([]wardrobe.Order, error) {
+	var bearer = fmt.Sprintf("Bearer %s", authTok)
+	url := fmt.Sprintf("https://api.tdameritrade.com/v1/accounts/%s/transactions", accountId)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Authorization", bearer)
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	body, _ := ioutil.ReadAll(resp.Body)
+	var trans TDTransactions
+	_ = json.Unmarshal(body, &trans)
+	log.Printf("res: %v", trans)
+
+	for i, t := range trans {
+		b
+	}
+
+	return nil, nil
 }

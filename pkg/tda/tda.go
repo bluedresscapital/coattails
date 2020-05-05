@@ -1,40 +1,31 @@
 package tda
 
 import (
-	"fmt"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"log"
 )
 
-// Initializes TD Account, which entails:
-// - fetching refresh token for td account
-// - storing encrypted client_id and refresh_token into db, linked to user_id
-func InitTDAccount(userId int, portId int, code string, clientId string) error {
-	auth, err := FetchRefreshTokenUsingAuthCode(code, clientId)
+func GetOrders(tdAccountId int) ([]wardrobe.Order, error) {
+	accessTok, tdAccount, err := getAccessToken(tdAccountId)
 	if err != nil {
 		return err
 	}
-	if auth.RefreshToken == "" || auth.AccessToken == "" {
-		return fmt.Errorf("invalid td auth credentials: %s, %s", code, clientId)
-	}
-	return wardrobe.UpsertTDAccount(userId, clientId, auth.RefreshToken)
+	log.Printf("Using this accessToken: %s", *accessTok)
+	return ScrapeOrders(*accessTok, tdAccount.AccountNum)
 }
 
-func FakeRequest(userId int, tdAccountId int) error {
-	tdAccount, err := wardrobe.FetchTDAccount(tdAccountId, userId)
+func getAccessToken(tdAccountId int) (*string, *wardrobe.TDAccount, error) {
+	tdAccount, err := wardrobe.FetchTDAccount(tdAccountId)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 	auth, err := FetchAccessToken(tdAccount.RefreshToken, tdAccount.ClientId)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
-
-	err = wardrobe.UpsertTDAccount(userId, tdAccount.ClientId, auth.RefreshToken)
+	err = wardrobe.UpdateRefreshToken(tdAccountId, auth.RefreshToken)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
-
-	log.Printf("We're using this access token: %s", auth.AccessToken)
-	return nil
+	return &auth.AccessToken, tdAccount, nil
 }

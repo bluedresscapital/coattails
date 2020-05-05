@@ -27,9 +27,10 @@ func fetchTDAccountsHandler(userId *int, w http.ResponseWriter, r *http.Request)
 }
 
 type CreateTDPortRequest struct {
-	Name     string `json:"name"`
-	Code     string `json:"code"`
-	ClientId string `json:"client_id"`
+	Name       string `json:"name"`
+	AccountNum string `json:"account_num"`
+	Code       string `json:"code"`
+	ClientId   string `json:"client_id"`
 }
 
 func createTDPortfolioHandler(userId *int, w http.ResponseWriter, r *http.Request) {
@@ -46,7 +47,7 @@ func createTDPortfolioHandler(userId *int, w http.ResponseWriter, r *http.Reques
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	err = wardrobe.CreateTDPortfolio(*userId, req.Name, req.ClientId, auth.RefreshToken)
+	err = wardrobe.CreateTDPortfolio(*userId, req.Name, req.AccountNum, req.ClientId, auth.RefreshToken)
 	if err != nil {
 		log.Printf("Error creating td portfolio: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
