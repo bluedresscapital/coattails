@@ -83,7 +83,7 @@ func UpsertOrder(o Order) error {
 	return err
 }
 
-func DeleteOrderByUid(uid string) error {
-	_, err := db.Exec(`DELETE FROM orders WHERE uid=$1`, uid)
+func DeleteOrder(uid string, portId int) error {
+	_, err := db.Exec(`DELETE FROM orders WHERE uid=$1 AND port_id=$2`, uid, portId)
 	return err
 }

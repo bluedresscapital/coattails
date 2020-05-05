@@ -21,15 +21,17 @@ type UpsertOrderRequest struct {
 }
 
 type DeleteOrderRequest struct {
-	Uid string `json:"uid"`
+	PortId int    `json:"port_id"`
+	Uid    string `json:"uid"`
 }
 
 func registerOrderRoutes(r *mux.Router) {
 	log.Printf("Registering order routes")
 	s := r.PathPrefix("/order").Subrouter()
 	s.HandleFunc("", authMiddleware(fetchOrdersHandler)).Methods("GET")
-	s.HandleFunc("/upsert", authMiddleware(upsertOrderHandler)).Methods("POST")
-	s.HandleFunc("/delete", authMiddleware(deleteOrderHandler)).Methods("POST")
+	s.HandleFunc("/upsert", portAuthMiddleware(upsertOrderHandler)).Methods("POST")
+	s.HandleFunc("/delete", portAuthMiddleware(deleteOrderHandler)).Methods("POST")
+	//s.HandleFunc("/reload")
 }
 
 func fetchOrdersHandler(userId *int, w http.ResponseWriter, r *http.Request) {
@@ -48,18 +50,6 @@ func upsertOrderHandler(userId *int, w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		log.Printf("Bad request: %v", err)
-		return
-	}
-	// First, verify that the user does in fact even own the portfolio they're trying
-	// to add to.
-	port, err := wardrobe.FetchPortfolioById(u.PortId)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	if port.UserId != *userId {
-		w.WriteHeader(http.StatusUnauthorized)
-		log.Printf("Unauthorized access of port %d by user %d", port.Id, userId)
 		return
 	}
 	err = wardrobe.UpsertOrder(wardrobe.Order{
@@ -94,24 +84,7 @@ func deleteOrderHandler(userId *int, w http.ResponseWriter, r *http.Request) {
 		log.Printf("Bad request: %v", err)
 		return
 	}
-	// Verify that the user even owns the transfer that they're trying to delete
-	o, err := wardrobe.FetchOrderByUid(deleteOrderRequest.Uid)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		log.Printf("Unable to fetch order by uid: %v", err)
-		return
-	}
-	port, err := wardrobe.FetchPortfolioById(o.PortId)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	if port.UserId != *userId {
-		w.WriteHeader(http.StatusUnauthorized)
-		log.Printf("Unauthorized delete of order by user %d", *userId)
-		return
-	}
-	err = wardrobe.DeleteOrderByUid(deleteOrderRequest.Uid)
+	err = wardrobe.DeleteOrder(deleteOrderRequest.Uid, deleteOrderRequest.PortId)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Printf("Error in deleting order: %v", err)

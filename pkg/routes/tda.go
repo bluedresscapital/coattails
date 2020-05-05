@@ -52,11 +52,11 @@ func createTDPortfolioHandler(userId *int, w http.ResponseWriter, r *http.Reques
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	accounts, err := wardrobe.FetchPortfoliosByUserId(*userId)
+	portfolios, err := wardrobe.FetchPortfoliosByUserId(*userId)
 	if err != nil {
 		log.Printf("Error fetching all portfolios by user: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	writeJsonResponse(w, accounts)
+	writeJsonResponse(w, portfolios)
 }

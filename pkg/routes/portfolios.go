@@ -50,11 +50,11 @@ func createPortfolioHandler(userId *int, w http.ResponseWriter, r *http.Request)
 		_, _ = fmt.Fprintf(w, "unable to create portfolio: %v", err)
 		return
 	}
-	port, err := wardrobe.FetchPortfolio(*userId, createPortRequest.Name, createPortRequest.Type)
+	portfolios, err := wardrobe.FetchPortfoliosByUserId(*userId)
 	if err != nil {
+		log.Printf("Error fetching all portfolios by user: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
-		_, _ = fmt.Fprintf(w, "unable to create portfolio: %v", err)
 		return
 	}
-	writeJsonResponse(w, *port)
+	writeJsonResponse(w, portfolios)
 }

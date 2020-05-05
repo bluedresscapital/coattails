@@ -74,7 +74,7 @@ func FetchTransfersbyUserId(userId int) ([]Transfer, error) {
 	return transfers, nil
 }
 
-func DeleteTransferByUid(uid string) error {
-	_, err := db.Exec(`DELETE FROM transfers WHERE uid=$1`, uid)
+func DeleteTransfer(uid string, portId int) error {
+	_, err := db.Exec(`DELETE FROM transfers WHERE uid=$1 AND port_id=$2`, uid, portId)
 	return err
 }
