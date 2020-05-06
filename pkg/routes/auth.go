@@ -96,6 +96,7 @@ func loginRegisterHelper(w http.ResponseWriter, r *http.Request, loginMode bool)
 	} else {
 		tok, err = auth.Register(l.Username, cipherPwd)
 		if err != nil {
+			log.Printf("we boomed here: %v", err)
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return
 		}
