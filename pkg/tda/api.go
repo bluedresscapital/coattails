@@ -47,6 +47,7 @@ func FetchAccessToken(refreshToken string, clientId string) (*AuthResponse, erro
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("resp body: %s", string(body))
 	var auth AuthResponse
 	err = json.Unmarshal(body, &auth)
 	if err != nil {
@@ -77,6 +78,9 @@ func FetchRefreshTokenUsingAuthCode(code string, clientId string) (*AuthResponse
 	if err != nil {
 		return nil, err
 	}
+	if auth.AccessToken == "" || auth.RefreshToken == "" {
+		return nil, fmt.Errorf("invalid auth response: %s", string(body))
+	}
 	return &auth, nil
 }
 
@@ -85,7 +89,7 @@ type TDTransactions []TDTransactionResponse
 type TDTransactionResponse struct {
 	OrderDate       string            `json:"orderDate"`
 	TransactionId   string            `json:"transactionId"`
-	TransactionDate string            `json:transactiondate`
+	TransactionDate string            `json:"transactionDate"`
 	TransactionItem TDTransactionItem `json:"transactionItem"`
 	Type            string            `json:"type"`
 }
@@ -118,9 +122,9 @@ func ScrapeOrders(authTok string, accountId string) ([]wardrobe.Order, error) {
 	_ = json.Unmarshal(body, &trans)
 	log.Printf("res: %v", trans)
 
-	for i, t := range trans {
-		b
-	}
+	//for i, t := range trans {
+	//	b
+	//}
 
 	return nil, nil
 }

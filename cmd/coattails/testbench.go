@@ -42,9 +42,14 @@ func main() {
 	wardrobe.InitDB(fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		pgHost, pgPort, pgUser, pgPwd, pgDb))
 
-	err = tda.GetOrders(1)
-	if err != nil {
-		log.Fatalf("Error making fake request: %v", err)
+	for i := 0; i < 10; i++ {
+		_, err = tda.GetOrders(3)
+		if err != nil {
+			log.Fatalf("Error making fake request: %v", err)
+		}
+		_, err = tda.GetOrders(1)
+		if err != nil {
+			log.Fatalf("Error making fake request: %v", err)
+		}
 	}
-
 }

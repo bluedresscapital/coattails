@@ -8,7 +8,7 @@ import (
 func GetOrders(tdAccountId int) ([]wardrobe.Order, error) {
 	accessTok, tdAccount, err := getAccessToken(tdAccountId)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	log.Printf("Using this accessToken: %s", *accessTok)
 	return ScrapeOrders(*accessTok, tdAccount.AccountNum)
