@@ -14,4 +14,5 @@ If your local settings are in any way not the default, feel free to override the
 
 For redis, coattails will connect to `localhost` on port `6379` by default.
 
+# Test
 
