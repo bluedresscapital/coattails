@@ -22,7 +22,7 @@ func ReloadOrders(order OrderAPI, stock stockings.StockAPI) error {
 			if err != nil {
 				return err
 			}
-			orders[i].Value = price
+			orders[i].Value = *price
 		}
 	}
 
