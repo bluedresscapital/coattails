@@ -43,7 +43,7 @@ func main() {
 		pgHost, pgPort, pgUser, pgPwd, pgDb))
 
 	for i := 0; i < 10; i++ {
-		_, err = tda.GetOrders(3)
+		_, err = tda.GetOrders(2)
 		if err != nil {
 			log.Fatalf("Error making fake request: %v", err)
 		}

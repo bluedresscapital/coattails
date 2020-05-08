@@ -8,16 +8,12 @@ import (
 
 // Creates a TD Portfolio - this will insert a tda_accounts object, as well as
 // insert a portfolio object
-func CreateTDPortfolio(userId int, name string, accountNum string, clientId string, refreshToken string) error {
+func CreateTDPortfolio(userId int, name string, accountNum string, refreshToken string) error {
 	refreshCipher, err := sundress.BdcEncrypt(refreshToken)
 	if err != nil {
 		return err
 	}
-	clientIdHash := sundress.Hash(clientId)
-	clientIdCipher, err := sundress.BdcEncrypt(clientId)
-	if err != nil {
-		return err
-	}
+	accountNumHash := sundress.Hash(accountNum)
 	accountNumCipher, err := sundress.BdcEncrypt(accountNum)
 	if err != nil {
 		return err
@@ -27,9 +23,9 @@ func CreateTDPortfolio(userId int, name string, accountNum string, clientId stri
 		return err
 	}
 	_, err = tx.Exec(`
-		INSERT INTO tda_accounts (user_id, client_id_hash, client_id_cipher, account_num_cipher, refresh_token_cipher)
-		VALUES ($1, $2, $3, $4, $5)
-		`, userId, clientIdHash[:], clientIdCipher, accountNumCipher, refreshCipher)
+		INSERT INTO tda_accounts (user_id, account_num_hash, account_num_cipher, refresh_token_cipher)
+		VALUES ($1, $2, $3, $4)
+		`, userId, accountNumHash[:], accountNumCipher, refreshCipher)
 	if err != nil {
 		_ = tx.Rollback()
 		return err
@@ -62,12 +58,11 @@ type TDAccount struct {
 	Id           int    `json:"id"`
 	UserId       int    `json:"user_id"`
 	AccountNum   string `json:"account_num"`
-	ClientId     string `json:"client_id"`
 	RefreshToken string `json:"refresh_token"`
 }
 
 func FetchTDAccount(id int) (*TDAccount, error) {
-	rows, err := db.Query("SELECT id, user_id, client_id_cipher, account_num_cipher, refresh_token_cipher FROM tda_accounts WHERE id=$1", id)
+	rows, err := db.Query("SELECT id, user_id, account_num_cipher, refresh_token_cipher FROM tda_accounts WHERE id=$1", id)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +80,7 @@ func FetchTDAccount(id int) (*TDAccount, error) {
 }
 
 func FetchTDAccountsByUserId(userId int) ([]TDAccount, error) {
-	rows, err := db.Query("SELECT id, user_id, client_id_cipher, account_num_cipher, refresh_token_cipher FROM tda_accounts WHERE user_id=$1", userId)
+	rows, err := db.Query("SELECT id, user_id, account_num_cipher, refresh_token_cipher FROM tda_accounts WHERE user_id=$1", userId)
 	if err != nil {
 		return nil, err
 	}
@@ -105,14 +100,9 @@ func FetchTDAccountsByUserId(userId int) ([]TDAccount, error) {
 
 func fetchTDAccountFromRows(rows *sql.Rows) (*TDAccount, error) {
 	var td TDAccount
-	var clientIdCipher []byte
 	var refreshTokenCipher []byte
 	var accountNumCipher []byte
-	err := rows.Scan(&td.Id, &td.UserId, &clientIdCipher, &accountNumCipher, &refreshTokenCipher)
-	if err != nil {
-		return nil, err
-	}
-	clientId, err := sundress.BdcDecrypt(clientIdCipher)
+	err := rows.Scan(&td.Id, &td.UserId, &accountNumCipher, &refreshTokenCipher)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +114,6 @@ func fetchTDAccountFromRows(rows *sql.Rows) (*TDAccount, error) {
 	if err != nil {
 		return nil, err
 	}
-	td.ClientId = *clientId
 	td.RefreshToken = *refreshToken
 	td.AccountNum = *accountNum
 	return &td, nil

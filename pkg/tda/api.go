@@ -14,6 +14,8 @@ import (
 
 //func FetchRefreshToken()
 
+const ClientId = "GBCZDGRJAOIJHF0IETOA76NFAKZ0OGQX"
+
 type AuthResponse struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
@@ -31,13 +33,13 @@ type AuthResponse struct {
 // 3. Use access token.
 // Note - if we ever mishandle the refresh token (i.e. delete or lose it), we would need to reauth TD
 // Ideally if done correctly, the client should never realize that we're constantly swapping these refresh tokens.
-func FetchAccessToken(refreshToken string, clientId string) (*AuthResponse, error) {
+func FetchAccessToken(refreshToken string) (*AuthResponse, error) {
 	escapedToken := url2.QueryEscape(refreshToken)
 	url := "https://api.tdameritrade.com/v1/oauth2/token"
 	data := fmt.Sprintf(
 		"grant_type=refresh_token&refresh_token=%s&access_type=offline&code=&client_id=%s%%40AMER.OAUTHAP&redirect_uri=http%%3A%%2F%%2Flocalhost",
 		escapedToken,
-		clientId)
+		ClientId)
 	resp, err := http.Post(url, "application/x-www-form-urlencoded", bytes.NewBuffer([]byte(data)))
 	if err != nil {
 		return nil, err

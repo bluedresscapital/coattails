@@ -30,7 +30,6 @@ type CreateTDPortRequest struct {
 	Name       string `json:"name"`
 	AccountNum string `json:"account_num"`
 	Code       string `json:"code"`
-	ClientId   string `json:"client_id"`
 }
 
 func createTDPortfolioHandler(userId *int, w http.ResponseWriter, r *http.Request) {
@@ -41,13 +40,13 @@ func createTDPortfolioHandler(userId *int, w http.ResponseWriter, r *http.Reques
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	auth, err := tda.FetchRefreshTokenUsingAuthCode(req.Code, req.ClientId)
+	auth, err := tda.FetchRefreshTokenUsingAuthCode(req.Code, tda.ClientId)
 	if err != nil {
 		log.Printf("Error fetching refresh token: %v", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	err = wardrobe.CreateTDPortfolio(*userId, req.Name, req.AccountNum, req.ClientId, auth.RefreshToken)
+	err = wardrobe.CreateTDPortfolio(*userId, req.Name, req.AccountNum, auth.RefreshToken)
 	if err != nil {
 		log.Printf("Error creating td portfolio: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)

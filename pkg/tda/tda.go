@@ -19,7 +19,7 @@ func getAccessToken(tdAccountId int) (*string, *wardrobe.TDAccount, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	auth, err := FetchAccessToken(tdAccount.RefreshToken, tdAccount.ClientId)
+	auth, err := FetchAccessToken(tdAccount.RefreshToken)
 	if err != nil {
 		return nil, nil, err
 	}
