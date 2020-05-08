@@ -43,11 +43,13 @@ func main() {
 		pgHost, pgPort, pgUser, pgPwd, pgDb))
 
 	for i := 0; i < 10; i++ {
-		_, err = tda.GetOrders(2)
+		tdaAPI := tda.API{AccountId: 2}
+		_, err = tdaAPI.GetOrders()
 		if err != nil {
 			log.Fatalf("Error making fake request: %v", err)
 		}
-		_, err = tda.GetOrders(1)
+		tdaAPI = tda.API{AccountId: 1}
+		_, err = tdaAPI.GetOrders()
 		if err != nil {
 			log.Fatalf("Error making fake request: %v", err)
 		}

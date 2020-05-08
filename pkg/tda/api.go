@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"github.com/shopspring/decimal"
 	"io/ioutil"
 	"log"
@@ -90,7 +89,7 @@ type TDTransactions []TDTransactionResponse
 
 type TDTransactionResponse struct {
 	OrderDate       string            `json:"orderDate"`
-	TransactionId   string            `json:"transactionId"`
+	TransactionId   int               `json:"transactionId"`
 	TransactionDate string            `json:"transactionDate"`
 	TransactionItem TDTransactionItem `json:"transactionItem"`
 	Type            string            `json:"type"`
@@ -98,6 +97,7 @@ type TDTransactionResponse struct {
 
 type TDTransactionItem struct {
 	Amount      decimal.Decimal             `json:"amount"`
+	Price       decimal.Decimal             `json:"price"`
 	Instrument  TDTransactionItemInstrument `json:"instrument"`
 	Instruction string                      `json:"instruction"`
 }
@@ -106,7 +106,7 @@ type TDTransactionItemInstrument struct {
 	Symbol string `json:"symbol"`
 }
 
-func ScrapeOrders(authTok string, accountId string) ([]wardrobe.Order, error) {
+func ScrapeOrders(authTok string, accountId string) (TDTransactions, error) {
 	var bearer = fmt.Sprintf("Bearer %s", authTok)
 	url := fmt.Sprintf("https://api.tdameritrade.com/v1/accounts/%s/transactions", accountId)
 	req, err := http.NewRequest("GET", url, nil)
@@ -121,12 +121,10 @@ func ScrapeOrders(authTok string, accountId string) ([]wardrobe.Order, error) {
 	}
 	body, _ := ioutil.ReadAll(resp.Body)
 	var trans TDTransactions
-	_ = json.Unmarshal(body, &trans)
-	log.Printf("res: %v", trans)
-
-	//for i, t := range trans {
-	//	b
-	//}
-
-	return nil, nil
+	err = json.Unmarshal(body, &trans)
+	if err != nil {
+		log.Printf("Error here?")
+		return nil, err
+	}
+	return trans, nil
 }

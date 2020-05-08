@@ -59,6 +59,25 @@ func FetchPortfolioById(id int) (*Portfolio, error) {
 	return &port, nil
 }
 
+func FetchPortfolioByTDAccountId(tdAccountId int) (*Portfolio, error) {
+	rows, err := db.Query("SELECT id, name, type, user_id FROM portfolios WHERE tda_account_id=$1", tdAccountId)
+	if err != nil {
+		return nil, err
+	}
+	if !rows.Next() {
+		return nil, fmt.Errorf("no portfolio with tda_account_id %d found", tdAccountId)
+	}
+	var port Portfolio
+	err = rows.Scan(&port.Id, &port.Name, &port.Type, &port.UserId)
+	if err != nil {
+		return nil, err
+	}
+	if rows.Next() {
+		return nil, fmt.Errorf("multiple portfolios found with tda_account_id %d", tdAccountId)
+	}
+	return &port, nil
+}
+
 func FetchPortfoliosByUserId(userId int) ([]Portfolio, error) {
 	rows, err := db.Query("SELECT id, name, type, user_id FROM portfolios WHERE user_id=$1", userId)
 	if err != nil {

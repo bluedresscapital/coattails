@@ -17,6 +17,9 @@ import (
 */
 type IexApi struct{}
 
+// This will automatically check if IexAPI implements StockAPI at compile time :D
+var _ StockAPI = (*IexApi)(nil)
+
 type iexStock struct {
 	Symbol        string          `json:"symbol"`
 	Name          string          `json:"companyName"`
