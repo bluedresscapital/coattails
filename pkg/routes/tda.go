@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/bluedresscapital/coattails/pkg/poncho"
+	"github.com/bluedresscapital/coattails/pkg/stockings"
 	"github.com/bluedresscapital/coattails/pkg/tda"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"github.com/gorilla/mux"
@@ -70,8 +71,10 @@ func createTDPortfolioHandler(userId *int, w http.ResponseWriter, r *http.Reques
 }
 
 func reloadTDOrderHandler(tdAccountId *int, w http.ResponseWriter, r *http.Request) {
-	api := tda.API{AccountId: *tdAccountId}
-	err := poncho.ReloadOrders(api)
+	order := tda.API{AccountId: *tdAccountId}
+	// TODO - change this to a different API :)
+	stock := stockings.IexApi{}
+	err := poncho.ReloadOrders(order, stock)
 	if err != nil {
 		log.Printf("Damn we failed: %v", err)
 	}

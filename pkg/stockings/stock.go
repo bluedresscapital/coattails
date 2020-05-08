@@ -32,3 +32,16 @@ type HistoricalStock struct {
 }
 
 type HistoricalStocks []HistoricalStock
+
+func GetHistoricalPrice(stock StockAPI, ticker string, date time.Time) (*decimal.Decimal, error) {
+	// TODO
+	// 1. First, check if that price is in our DB
+
+	// 2. If not, return api call:
+	price, err := stock.GetHistoricalPrice(ticker, date)
+	if err != nil {
+		return nil, err
+	}
+	// 3. Now we should store it in our db so we don't have to make the same api call again
+	return &price.Price, nil
+}

@@ -48,7 +48,6 @@ func FetchAccessToken(refreshToken string) (*AuthResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("resp body: %s", string(body))
 	var auth AuthResponse
 	err = json.Unmarshal(body, &auth)
 	if err != nil {
@@ -93,6 +92,7 @@ type TDTransactionResponse struct {
 	TransactionDate string            `json:"transactionDate"`
 	TransactionItem TDTransactionItem `json:"transactionItem"`
 	Type            string            `json:"type"`
+	Description     string            `json:"description"`
 }
 
 type TDTransactionItem struct {
@@ -120,10 +120,10 @@ func ScrapeOrders(authTok string, accountId string) (TDTransactions, error) {
 		return nil, err
 	}
 	body, _ := ioutil.ReadAll(resp.Body)
+	log.Printf("scraped:\n%s", string(body))
 	var trans TDTransactions
 	err = json.Unmarshal(body, &trans)
 	if err != nil {
-		log.Printf("Error here?")
 		return nil, err
 	}
 	return trans, nil

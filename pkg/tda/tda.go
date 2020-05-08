@@ -3,7 +3,7 @@ package tda
 import (
 	"github.com/bluedresscapital/coattails/pkg/poncho"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
-	"log"
+	"github.com/shopspring/decimal"
 	"strconv"
 	"time"
 )
@@ -19,7 +19,6 @@ func (api API) GetOrders() ([]wardrobe.Order, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("Using this accessToken: %s", *accessTok)
 	trans, err := ScrapeOrders(*accessTok, tdAccount.AccountNum)
 	if err != nil {
 		return nil, err
@@ -30,21 +29,32 @@ func (api API) GetOrders() ([]wardrobe.Order, error) {
 	}
 	var orders []wardrobe.Order
 	for _, t := range trans {
-		if t.Type != "TRADE" && t.Type != "RECEIVE_AND_DELIVER" && t.Type != "TRANSFER OF SECURITY OR OPTION IN" {
+		var isBuy bool
+		var price decimal.Decimal
+		if t.Type == "RECEIVE_AND_DELIVER" && t.Description == "TRANSFER OF SECURITY OR OPTION IN" {
+			// This is for assets that were transferred into the account, so they don't have a starting price
+			// For now, we just set their cost basis as whatever the price of the stock was that day, but if
+			// we wanted to be more pedantic we could allow the user to manually edit it
+			isBuy = true
+			price = decimal.Zero
+		} else if t.Type == "TRADE" {
+			isBuy = t.TransactionItem.Instruction == "BUY"
+			price = t.TransactionItem.Price
+		} else {
+			// Don't even add the order if it isn't one of the categories listed above
 			continue
 		}
 		date, err := time.Parse("2006-01-02T15:04:05+0000", t.TransactionDate)
 		if err != nil {
 			return nil, err
 		}
-		log.Printf("date: %s, instruction: %s", t.TransactionDate, t.TransactionItem.Instruction)
 		order := wardrobe.Order{
 			Uid:           strconv.Itoa(t.TransactionId),
 			PortId:        port.Id,
 			Stock:         t.TransactionItem.Instrument.Symbol,
 			Quantity:      t.TransactionItem.Amount,
-			Value:         t.TransactionItem.Price,
-			IsBuy:         t.TransactionItem.Instruction == "BUY",
+			Value:         price,
+			IsBuy:         isBuy,
 			ManuallyAdded: false,
 			Date:          date,
 		}
