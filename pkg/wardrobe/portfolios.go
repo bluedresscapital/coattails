@@ -1,6 +1,7 @@
 package wardrobe
 
 import (
+	"database/sql"
 	"fmt"
 )
 
@@ -50,9 +51,13 @@ func FetchPortfolioById(id int) (*Portfolio, error) {
 		return nil, fmt.Errorf("no portfolio with id %d found", id)
 	}
 	var port Portfolio
-	err = rows.Scan(&port.Id, &port.Name, &port.Type, &port.UserId, &port.TDAccountId)
+	var tdAccountId sql.NullInt64
+	err = rows.Scan(&port.Id, &port.Name, &port.Type, &port.UserId, &tdAccountId)
 	if err != nil {
 		return nil, err
+	}
+	if tdAccountId.Valid {
+		port.TDAccountId = int(tdAccountId.Int64)
 	}
 	if rows.Next() {
 		return nil, fmt.Errorf("multiple portfolios found with id %d", id)
@@ -61,7 +66,7 @@ func FetchPortfolioById(id int) (*Portfolio, error) {
 }
 
 func FetchPortfolioByTDAccountId(tdAccountId int) (*Portfolio, error) {
-	rows, err := db.Query("SELECT id, name, type, user_id, tda_account_id FROM portfolios WHERE tda_account_id=$1", tdAccountId)
+	rows, err := db.Query("SELECT id, name, type, user_id FROM portfolios WHERE tda_account_id=$1", tdAccountId)
 	if err != nil {
 		return nil, err
 	}
@@ -69,10 +74,11 @@ func FetchPortfolioByTDAccountId(tdAccountId int) (*Portfolio, error) {
 		return nil, fmt.Errorf("no portfolio with tda_account_id %d found", tdAccountId)
 	}
 	var port Portfolio
-	err = rows.Scan(&port.Id, &port.Name, &port.Type, &port.UserId, &port.TDAccountId)
+	err = rows.Scan(&port.Id, &port.Name, &port.Type, &port.UserId)
 	if err != nil {
 		return nil, err
 	}
+	port.TDAccountId = tdAccountId
 	if rows.Next() {
 		return nil, fmt.Errorf("multiple portfolios found with tda_account_id %d", tdAccountId)
 	}
@@ -87,9 +93,13 @@ func FetchPortfoliosByUserId(userId int) ([]Portfolio, error) {
 	var ports []Portfolio
 	for rows.Next() {
 		var port Portfolio
-		err = rows.Scan(&port.Id, &port.Name, &port.Type, &port.UserId, &port.TDAccountId)
+		var tdAccountId sql.NullInt64
+		err = rows.Scan(&port.Id, &port.Name, &port.Type, &port.UserId, &tdAccountId)
 		if err != nil {
 			return nil, err
+		}
+		if tdAccountId.Valid {
+			port.TDAccountId = int(tdAccountId.Int64)
 		}
 		ports = append(ports, port)
 	}
