@@ -4,6 +4,12 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"time"
+
 	"github.com/bluedresscapital/coattails/pkg/routes"
 	"github.com/bluedresscapital/coattails/pkg/stockings"
 	"github.com/bluedresscapital/coattails/pkg/sundress"
@@ -11,11 +17,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"github.com/rs/cors"
-	"log"
-	"net/http"
-	"os"
-	"os/signal"
-	"time"
 )
 
 func initDeps() time.Duration {
