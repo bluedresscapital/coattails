@@ -11,8 +11,8 @@ import (
 func apiCheck(w http.ResponseWriter, r *http.Request) {
 	api := stockings.IexApi{}
 	aObj, err := api.GetCurrentPrice("MELI")
-	a, _ := json.Marshal(aObj)
-	fmt.Fprintln(w, string(a))
+	//a, _ := json.Marshal(aObj)
+	fmt.Fprintln(w, aObj.Name)
 	if err != nil {
 		fmt.Println(err)
 	}

@@ -2,10 +2,11 @@ package routes
 
 import (
 	"fmt"
-	"github.com/bluedresscapital/coattails/pkg/sundress"
-	"github.com/gorilla/mux"
 	"log"
 	"net/http"
+
+	"github.com/bluedresscapital/coattails/pkg/sundress"
+	"github.com/gorilla/mux"
 )
 
 func testHandler(w http.ResponseWriter, r *http.Request) {
@@ -37,6 +38,8 @@ func RegisterAllRoutes(r *mux.Router) {
 	r.HandleFunc("/test", testHandler)
 	r.HandleFunc("/websocket", testWebSocket)
 	r.HandleFunc("/apitest", apiCheck)
+	//r.HandleFunc("/middleout", middleOutTest)
+	r.HandleFunc("/financego", checkPiquette)
 	// Register all /auth routes
 	registerAuthRoutes(r)
 }
