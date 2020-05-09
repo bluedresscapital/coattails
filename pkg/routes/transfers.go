@@ -1,6 +1,8 @@
 package routes
 
 import (
+	"github.com/bluedresscapital/coattails/pkg/poncho"
+	"github.com/bluedresscapital/coattails/pkg/tda"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"github.com/gorilla/mux"
 	"github.com/shopspring/decimal"
@@ -29,6 +31,7 @@ func registerTransferRoutes(r *mux.Router) {
 	s.HandleFunc("", authMiddleware(fetchTransfersHandler)).Methods("GET")
 	s.HandleFunc("/upsert", portAuthMiddleware(upsertTransferHandler)).Methods("POST")
 	s.HandleFunc("/delete", portAuthMiddleware(deleteTransferHandler)).Methods("POST")
+	s.HandleFunc("/reload", portAuthMiddleware(reloadTransferHandler)).Methods("POST")
 }
 
 func fetchTransfersHandler(userId *int, w http.ResponseWriter, r *http.Request) {
@@ -42,20 +45,22 @@ func fetchTransfersHandler(userId *int, w http.ResponseWriter, r *http.Request) 
 }
 
 func upsertTransferHandler(userId *int, w http.ResponseWriter, r *http.Request) {
-	var upsertTransferRequest UpsertTransferRequest
-	err := decodeJSONBody(w, r, &upsertTransferRequest)
+	var req UpsertTransferRequest
+	err := decodeJSONBody(w, r, &req)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		log.Printf("Bad request: %v", err)
 		return
 	}
-	err = wardrobe.UpsertTransfer(
-		upsertTransferRequest.Uid,
-		upsertTransferRequest.PortId,
-		upsertTransferRequest.Amount,
-		upsertTransferRequest.IsDeposit,
-		upsertTransferRequest.ManuallyAdded,
-		upsertTransferRequest.Date)
+	err = wardrobe.UpsertTransfer(wardrobe.Transfer{
+		Uid:           req.Uid,
+		PortId:        req.PortId,
+		Amount:        req.Amount,
+		IsDeposit:     req.IsDeposit,
+		ManuallyAdded: true,
+		Date:          req.Date,
+	})
+
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		log.Printf("Errored on insert: %v", err)
@@ -82,6 +87,41 @@ func deleteTransferHandler(userId *int, w http.ResponseWriter, r *http.Request) 
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Printf("Error in deleting transfer: %v", err)
 		return
+	}
+	ts, err := wardrobe.FetchTransfersbyUserId(*userId)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	writeJsonResponse(w, ts)
+}
+
+func reloadTransferHandler(userId *int, w http.ResponseWriter, r *http.Request) {
+	var req GenericPortIdRequest
+	err := decodeJSONBody(w, r, &req)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		log.Printf("Bad request: %v", err)
+		return
+	}
+	port, err := wardrobe.FetchPortfolioById(req.PortId)
+	if err != nil {
+		log.Printf("Unable to locate portfolio with id %d", req.PortId)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if port.Type == "tda" {
+		err = validateTdaUsage(*port, *userId)
+		if err != nil {
+			log.Printf("Unable to validate td account usage: %v", err)
+			return
+		}
+		transfer := tda.API{AccountId: port.TDAccountId}
+		err = poncho.ReloadTransfers(transfer)
+		if err != nil {
+			log.Printf("Unable to reload transfers: %v", err)
+			return
+		}
 	}
 	ts, err := wardrobe.FetchTransfersbyUserId(*userId)
 	if err != nil {

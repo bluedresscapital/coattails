@@ -92,6 +92,7 @@ type TDTransactionResponse struct {
 	TransactionItem TDTransactionItem `json:"transactionItem"`
 	Type            string            `json:"type"`
 	Description     string            `json:"description"`
+	NetAmount       decimal.Decimal   `json:"netAmount"`
 }
 
 type TDTransactionItem struct {
@@ -105,24 +106,37 @@ type TDTransactionItemInstrument struct {
 	Symbol string `json:"symbol"`
 }
 
-func ScrapeOrders(authTok string, accountId string) (TDTransactions, error) {
-	var bearer = fmt.Sprintf("Bearer %s", authTok)
+type TDTransfer struct {
+	TransactionId  string          `json:"transactionId"`
+	NetAmount      decimal.Decimal `json:"netAmount"`
+	SettlementDate string          `json:"settlementDate"`
+}
+
+type TDTransfers []TDTransfer
+
+func ScrapeTransactions(authTok string, accountId string) (TDTransactions, error) {
 	url := fmt.Sprintf("https://api.tdameritrade.com/v1/accounts/%s/transactions", accountId)
+	resp, err := makeGetRequest(authTok, url)
+	if err != nil {
+		return nil, err
+	}
+	body, _ := ioutil.ReadAll(resp.Body)
+	//log.Printf("Scraped:\n%s", string(body))
+	var orders TDTransactions
+	err = json.Unmarshal(body, &orders)
+	if err != nil {
+		return nil, err
+	}
+	return orders, nil
+}
+
+func makeGetRequest(authTok string, url string) (*http.Response, error) {
+	var bearer = fmt.Sprintf("Bearer %s", authTok)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Add("Authorization", bearer)
 	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	body, _ := ioutil.ReadAll(resp.Body)
-	var trans TDTransactions
-	err = json.Unmarshal(body, &trans)
-	if err != nil {
-		return nil, err
-	}
-	return trans, nil
+	return client.Do(req)
 }

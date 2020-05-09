@@ -117,17 +117,12 @@ func reloadOrderHandler(userId *int, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if port.Type == "tda" {
-		auth, err := wardrobe.FetchTDAccount(port.TDAccountId)
-		if err != nil {
-			log.Printf("Unable to fetch td account %d", port.TDAccountId)
-			return
-		}
-		if auth.UserId != *userId {
-			log.Printf("Unauthorized access of td account %d by user %d", auth.Id, *userId)
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
 		log.Print("Reloading tda orders...")
+		err = validateTdaUsage(*port, *userId)
+		if err != nil {
+			log.Printf("Unable to validate td account usage: %v", err)
+			return
+		}
 		order := tda.API{AccountId: port.TDAccountId}
 		// TODO - change this to a different API :)
 		stock := stockings.IexApi{}

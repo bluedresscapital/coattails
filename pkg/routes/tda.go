@@ -3,6 +3,7 @@ package routes
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"github.com/bluedresscapital/coattails/pkg/poncho"
 	"github.com/bluedresscapital/coattails/pkg/stockings"
 	"github.com/bluedresscapital/coattails/pkg/tda"
@@ -108,4 +109,15 @@ func tdAuthMiddleware(handler func(*int, http.ResponseWriter, *http.Request)) ht
 		}
 		handler(&req.TDAccountID, w, r)
 	})
+}
+
+func validateTdaUsage(port wardrobe.Portfolio, userId int) error {
+	auth, err := wardrobe.FetchTDAccount(port.TDAccountId)
+	if err != nil {
+		return fmt.Errorf("unable to fetch td account %d", port.TDAccountId)
+	}
+	if auth.UserId != userId {
+		return fmt.Errorf("unauthorized access of td account %d by user %d", auth.Id, userId)
+	}
+	return nil
 }

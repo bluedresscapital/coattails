@@ -15,13 +15,13 @@ type Transfer struct {
 }
 
 // Upserts transfer into db - function is idempotent
-func UpsertTransfer(uid string, portId int, amount decimal.Decimal, isDeposit bool, manuallyAdded bool, date time.Time) error {
+func UpsertTransfer(t Transfer) error {
 	_, err := db.Exec(`
 		INSERT INTO transfers (uid, port_id, amount, is_deposit, manually_added, date) 
 		VALUES ($1,$2,$3,$4,$5,$6)
 		ON CONFLICT (uid) DO UPDATE
 		SET port_id=$2,amount=$3,is_deposit=$4,manually_added=$5,date=$6`,
-		uid, portId, amount.StringFixedBank(4), isDeposit, manuallyAdded, date)
+		t.Uid, t.PortId, t.Amount.StringFixedBank(4), t.IsDeposit, t.ManuallyAdded, t.Date)
 	return err
 }
 

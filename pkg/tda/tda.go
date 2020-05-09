@@ -13,13 +13,14 @@ type API struct {
 }
 
 var _ poncho.OrderAPI = (*API)(nil)
+var _ poncho.TransferAPI = (*API)(nil)
 
 func (api API) GetOrders() ([]wardrobe.Order, error) {
 	accessTok, tdAccount, err := api.getAccessToken()
 	if err != nil {
 		return nil, err
 	}
-	trans, err := ScrapeOrders(*accessTok, tdAccount.AccountNum)
+	trans, err := ScrapeTransactions(*accessTok, tdAccount.AccountNum)
 	if err != nil {
 		return nil, err
 	}
@@ -61,6 +62,41 @@ func (api API) GetOrders() ([]wardrobe.Order, error) {
 		orders = append(orders, order)
 	}
 	return orders, nil
+}
+
+func (api API) GetTransfers() ([]wardrobe.Transfer, error) {
+	accessTok, tdAccount, err := api.getAccessToken()
+	if err != nil {
+		return nil, err
+	}
+	trans, err := ScrapeTransactions(*accessTok, tdAccount.AccountNum)
+	if err != nil {
+		return nil, err
+	}
+	port, err := wardrobe.FetchPortfolioByTDAccountId(api.AccountId)
+	if err != nil {
+		return nil, err
+	}
+	var transfers []wardrobe.Transfer
+	for _, t := range trans {
+		if t.Type == "ELECTRONIC_FUND" ||
+			(t.Type == "JOURNAL" && t.Description == "CASH MOVEMENT OF INCOMING ACCOUNT TRANSFER") {
+			date, err := time.Parse("2006-01-02T15:04:05+0000", t.TransactionDate)
+			if err != nil {
+				return nil, err
+			}
+			transfer := wardrobe.Transfer{
+				Uid:           strconv.Itoa(t.TransactionId),
+				PortId:        port.Id,
+				Amount:        t.NetAmount,
+				IsDeposit:     t.NetAmount.IsZero() || t.NetAmount.IsPositive(),
+				ManuallyAdded: false,
+				Date:          date,
+			}
+			transfers = append(transfers, transfer)
+		}
+	}
+	return transfers, nil
 }
 
 func (api API) getAccessToken() (*string, *wardrobe.TDAccount, error) {
