@@ -5,6 +5,7 @@ import (
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"github.com/go-redis/redis/v7"
 	"github.com/gorilla/websocket"
+	"log"
 	"time"
 )
 
@@ -69,6 +70,7 @@ func (c *Client) WriteToClient() {
 			var redisMsg Msg
 			err := json.Unmarshal([]byte(msg.Payload), &redisMsg)
 			if err != nil {
+				log.Printf("Error in unmarshalling redisMsg: %v", err)
 				return
 			}
 			if redisMsg.ClientUid == c.Uid {
@@ -76,16 +78,19 @@ func (c *Client) WriteToClient() {
 			}
 			w, err := c.Conn.NextWriter(websocket.TextMessage)
 			if err != nil {
+				log.Printf("Error in getting next writer: %v", err)
 				return
 			}
 			// Write to client, ignore all errors :D
 			_, _ = w.Write([]byte(redisMsg.Payload))
 			if err := w.Close(); err != nil {
+				log.Printf("Error in writing to client: %v", err)
 				return
 			}
 		case <-ticker.C:
 			_ = c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := c.Conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				log.Printf("Error in writing ping message: %v", err)
 				return
 			}
 		}
@@ -97,4 +102,5 @@ func (c *Client) shutdown() {
 	_ = wardrobe.Unsub(c.Sub, c.Channel)
 	// Close client websocket connection
 	_ = c.Conn.Close()
+	log.Printf("Shutting down connection for channel %s", c.Channel)
 }

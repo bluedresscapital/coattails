@@ -2,6 +2,7 @@ package routes
 
 import (
 	"github.com/bluedresscapital/coattails/pkg/poncho"
+	"github.com/bluedresscapital/coattails/pkg/socks"
 	"github.com/bluedresscapital/coattails/pkg/tda"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"github.com/gorilla/mux"
@@ -124,9 +125,10 @@ func reloadTransferHandler(userId *int, w http.ResponseWriter, r *http.Request) 
 		}
 	}
 	ts, err := wardrobe.FetchTransfersbyUserId(*userId)
+	err = socks.PublishFromServer(getChannelFromUserId(*userId), "RELOADED_TRANSFERS", ts)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	writeJsonResponse(w, ts)
+	w.WriteHeader(http.StatusOK)
 }

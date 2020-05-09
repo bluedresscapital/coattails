@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"fmt"
 	"github.com/bluedresscapital/coattails/pkg/socks"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"github.com/google/uuid"
@@ -14,26 +15,25 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-func testWebSocket(w http.ResponseWriter, r *http.Request) {
+func getChannelFromUserId(userId int) string {
+	return fmt.Sprintf("chanel_user_id_%d", userId)
+}
+
+func testWebSocket(userId *int, w http.ResponseWriter, r *http.Request) {
+	upgrader.CheckOrigin = func(r *http.Request) bool {
+		return true
+	}
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Println(err)
+		log.Printf("err upgrading: %v", err)
 		return
 	}
-	c, statusCode, err := fetchCookie(r)
-	if err != nil {
-		w.WriteHeader(statusCode)
-		return
-	}
-	username, err := wardrobe.FetchAuthToken(c.Value)
-	if err != nil || username == nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
-	sub := wardrobe.Sub(*username)
+	channel := getChannelFromUserId(*userId)
+	log.Printf("Creating web socket connection for channel %s!", channel)
+	sub := wardrobe.Sub(channel)
 	client := socks.Client{
 		Uid:     uuid.New().String(),
-		Channel: *username,
+		Channel: channel,
 		Conn:    conn,
 		Sub:     sub,
 	}

@@ -2,6 +2,7 @@ package routes
 
 import (
 	"github.com/bluedresscapital/coattails/pkg/poncho"
+	"github.com/bluedresscapital/coattails/pkg/socks"
 	"github.com/bluedresscapital/coattails/pkg/stockings"
 	"github.com/bluedresscapital/coattails/pkg/tda"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
@@ -133,5 +134,10 @@ func reloadOrderHandler(userId *int, w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	orders, err := wardrobe.FetchOrdersByUserId(*userId)
-	writeJsonResponse(w, orders)
+	err = socks.PublishFromServer(getChannelFromUserId(*userId), "RELOADED_ORDERS", orders)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }

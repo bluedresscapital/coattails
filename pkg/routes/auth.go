@@ -20,6 +20,7 @@ func registerAuthRoutes(r *mux.Router) {
 	s.HandleFunc("/logout", logoutHandler).Methods("POST")
 	s.HandleFunc("/register", registerHandler).Methods("POST")
 	s.HandleFunc("/user", authMiddleware(userHandler)).Methods("POST")
+	s.HandleFunc("/websocket", authMiddleware(testWebSocket))
 
 	// Register all portfolio routes under /auth
 	registerPortfolioRoutes(s)
