@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/shopspring/decimal"
 	"io/ioutil"
-	"log"
 	"net/http"
 	url2 "net/url"
 )
@@ -120,7 +119,6 @@ func ScrapeOrders(authTok string, accountId string) (TDTransactions, error) {
 		return nil, err
 	}
 	body, _ := ioutil.ReadAll(resp.Body)
-	log.Printf("scraped:\n%s", string(body))
 	var trans TDTransactions
 	err = json.Unmarshal(body, &trans)
 	if err != nil {

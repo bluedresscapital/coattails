@@ -5,10 +5,11 @@ import (
 )
 
 type Portfolio struct {
-	Id     int    `json:"id"`
-	Name   string `json:"name"`
-	Type   string `json:"type"`
-	UserId int    `json:"user_id"`
+	Id          int    `json:"id"`
+	Name        string `json:"name"`
+	Type        string `json:"type"`
+	UserId      int    `json:"user_id"`
+	TDAccountId int    `json:"tda_account_id"`
 }
 
 func CreatePortfolio(userId int, name string, portType string) error {
@@ -41,7 +42,7 @@ func FetchPortfolio(userId int, name string, portType string) (*Portfolio, error
 }
 
 func FetchPortfolioById(id int) (*Portfolio, error) {
-	rows, err := db.Query("SELECT id, name, type, user_id FROM portfolios WHERE id=$1", id)
+	rows, err := db.Query("SELECT id, name, type, user_id, tda_account_id FROM portfolios WHERE id=$1", id)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +50,7 @@ func FetchPortfolioById(id int) (*Portfolio, error) {
 		return nil, fmt.Errorf("no portfolio with id %d found", id)
 	}
 	var port Portfolio
-	err = rows.Scan(&port.Id, &port.Name, &port.Type, &port.UserId)
+	err = rows.Scan(&port.Id, &port.Name, &port.Type, &port.UserId, &port.TDAccountId)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +61,7 @@ func FetchPortfolioById(id int) (*Portfolio, error) {
 }
 
 func FetchPortfolioByTDAccountId(tdAccountId int) (*Portfolio, error) {
-	rows, err := db.Query("SELECT id, name, type, user_id FROM portfolios WHERE tda_account_id=$1", tdAccountId)
+	rows, err := db.Query("SELECT id, name, type, user_id, tda_account_id FROM portfolios WHERE tda_account_id=$1", tdAccountId)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +69,7 @@ func FetchPortfolioByTDAccountId(tdAccountId int) (*Portfolio, error) {
 		return nil, fmt.Errorf("no portfolio with tda_account_id %d found", tdAccountId)
 	}
 	var port Portfolio
-	err = rows.Scan(&port.Id, &port.Name, &port.Type, &port.UserId)
+	err = rows.Scan(&port.Id, &port.Name, &port.Type, &port.UserId, &port.TDAccountId)
 	if err != nil {
 		return nil, err
 	}
@@ -79,14 +80,14 @@ func FetchPortfolioByTDAccountId(tdAccountId int) (*Portfolio, error) {
 }
 
 func FetchPortfoliosByUserId(userId int) ([]Portfolio, error) {
-	rows, err := db.Query("SELECT id, name, type, user_id FROM portfolios WHERE user_id=$1", userId)
+	rows, err := db.Query("SELECT id, name, type, user_id, tda_account_id FROM portfolios WHERE user_id=$1", userId)
 	if err != nil {
 		return nil, err
 	}
 	var ports []Portfolio
 	for rows.Next() {
 		var port Portfolio
-		err = rows.Scan(&port.Id, &port.Name, &port.Type, &port.UserId)
+		err = rows.Scan(&port.Id, &port.Name, &port.Type, &port.UserId, &port.TDAccountId)
 		if err != nil {
 			return nil, err
 		}

@@ -1,6 +1,9 @@
 package routes
 
 import (
+	"github.com/bluedresscapital/coattails/pkg/poncho"
+	"github.com/bluedresscapital/coattails/pkg/stockings"
+	"github.com/bluedresscapital/coattails/pkg/tda"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"github.com/gorilla/mux"
 	"github.com/shopspring/decimal"
@@ -31,7 +34,7 @@ func registerOrderRoutes(r *mux.Router) {
 	s.HandleFunc("", authMiddleware(fetchOrdersHandler)).Methods("GET")
 	s.HandleFunc("/upsert", portAuthMiddleware(upsertOrderHandler)).Methods("POST")
 	s.HandleFunc("/delete", portAuthMiddleware(deleteOrderHandler)).Methods("POST")
-	//s.HandleFunc("/reload")
+	s.HandleFunc("/reload", portAuthMiddleware(reloadOrderHandler)).Methods("POST")
 }
 
 func fetchOrdersHandler(userId *int, w http.ResponseWriter, r *http.Request) {
@@ -96,5 +99,44 @@ func deleteOrderHandler(userId *int, w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	writeJsonResponse(w, orders)
+}
+
+func reloadOrderHandler(userId *int, w http.ResponseWriter, r *http.Request) {
+	var req GenericPortIdRequest
+	err := decodeJSONBody(w, r, &req)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		log.Printf("Bad request: %v", err)
+		return
+	}
+	port, err := wardrobe.FetchPortfolioById(req.PortId)
+	if err != nil {
+		log.Printf("Unable to locate portfolio with id %d", req.PortId)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if port.Type == "tda" {
+		auth, err := wardrobe.FetchTDAccount(port.TDAccountId)
+		if err != nil {
+			log.Printf("Unable to fetch td account %d", port.TDAccountId)
+			return
+		}
+		if auth.UserId != *userId {
+			log.Printf("Unauthorized access of td account %d by user %d", auth.Id, *userId)
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		log.Print("Reloading tda orders...")
+		order := tda.API{AccountId: port.TDAccountId}
+		// TODO - change this to a different API :)
+		stock := stockings.IexApi{}
+		err = poncho.ReloadOrders(order, stock)
+		if err != nil {
+			log.Printf("Unable to reload orders with tda api!")
+			return
+		}
+	}
+	orders, err := wardrobe.FetchOrdersByUserId(*userId)
 	writeJsonResponse(w, orders)
 }

@@ -72,7 +72,11 @@ func FetchOrderByUid(uid string) (*Order, error) {
 }
 
 func UpsertOrder(o Order) error {
-	_, err := db.Exec(`
+	_, err := db.Exec(`INSERT INTO stocks (ticker) VALUES ($1) ON CONFLICT (ticker) DO NOTHING`, o.Stock)
+	if err != nil {
+		return err
+	}
+	_, err = db.Exec(`
 		INSERT INTO orders (uid, port_id, stock_id, quantity, value, is_buy, manually_added, date)
 			SELECT $1, $2, stocks.id, $4, $5, $6, $7, $8
 			FROM stocks

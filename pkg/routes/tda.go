@@ -77,8 +77,9 @@ func reloadTDOrderHandler(tdAccountId *int, w http.ResponseWriter, r *http.Reque
 	err := poncho.ReloadOrders(order, stock)
 	if err != nil {
 		log.Printf("Damn we failed: %v", err)
+	} else {
+		log.Printf("Succcess!")
 	}
-	log.Printf("Succcess!")
 }
 
 func tdAuthMiddleware(handler func(*int, http.ResponseWriter, *http.Request)) http.HandlerFunc {
