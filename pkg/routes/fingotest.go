@@ -23,7 +23,7 @@ import (
 )
 
 func checkPiquette(w http.ResponseWriter, r *http.Request) {
-	api := stockings.PiquetteAPI{}
+	api := stockings.FingoPack{}
 	testQuote, err := api.GetCurrentPrice("MELI")
 	if err != nil {
 		fmt.Println(err)
