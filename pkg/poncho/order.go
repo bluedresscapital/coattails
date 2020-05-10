@@ -3,6 +3,7 @@ package poncho
 import (
 	"github.com/bluedresscapital/coattails/pkg/stockings"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
+	"log"
 )
 
 type OrderAPI interface {
@@ -14,7 +15,9 @@ func ReloadOrders(order OrderAPI, stock stockings.StockAPI) error {
 	if err != nil {
 		return err
 	}
+	var portId int
 	for i, o := range orders {
+		portId = o.PortId
 		if o.Value.IsZero() {
 			price, err := stockings.GetHistoricalPrice(stock, o.Stock, o.Date)
 			if err != nil {
@@ -22,29 +25,30 @@ func ReloadOrders(order OrderAPI, stock stockings.StockAPI) error {
 			}
 			orders[i].Value = *price
 		}
-		err = wardrobe.UpsertOrder(o)
+		err = wardrobe.InsertIgnoreOrder(o)
 		if err != nil {
 			return err
 		}
 	}
-	// Just fact checking here
-	// this is basically our positions code - saving this for later :)
-	//port := make(map[string]decimal.Decimal)
-	//for _, o := range orders {
-	//	_, found := port[o.Stock]
-	//	if !found {
-	//		port[o.Stock] = decimal.Zero
-	//	}
-	//	if o.IsBuy {
-	//		port[o.Stock] = port[o.Stock].Add(o.Quantity)
-	//	} else {
-	//		port[o.Stock] = port[o.Stock].Sub(o.Quantity)
-	//	}
-	//}
-	//for a, b := range port {
-	//	if !b.IsZero() {
-	//		log.Printf("HW still owns %s shares of %s", b.String(), a)
-	//	}
-	//}
+	return UpdateOrderDependents(portId, stock)
+}
+
+// Updates all dependents of the orders table
+func UpdateOrderDependents(portId int, stock stockings.StockAPI) error {
+	port, err := wardrobe.FetchPortfolioById(portId)
+	if err != nil {
+		return err
+	}
+	maxOrderUpdatedAt, err := wardrobe.GetMaxOrderUpdatedAt(portId)
+	if err != nil {
+		return err
+	}
+	if port.OrdersUpdatedAt.Before(*maxOrderUpdatedAt) {
+		log.Printf("Detected new changes in portfolio's orders! Updating order depentents!")
+		err = ReloadPositions(portId, stock)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }

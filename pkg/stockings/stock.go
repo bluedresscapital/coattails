@@ -46,3 +46,7 @@ func GetHistoricalPrice(stock StockAPI, ticker string, date time.Time) (*decimal
 	//return &price.Price, nil
 	return &decimal.Zero, nil
 }
+
+func GetCurrentPrice(stock StockAPI) (*decimal.Decimal, error) {
+	return &decimal.Zero, nil
+}

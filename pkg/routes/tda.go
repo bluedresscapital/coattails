@@ -111,6 +111,7 @@ func tdAuthMiddleware(handler func(*int, http.ResponseWriter, *http.Request)) ht
 	})
 }
 
+// Verifies that the portfolio's tda_account is in fact owned by the user id
 func validateTdaUsage(port wardrobe.Portfolio, userId int) error {
 	auth, err := wardrobe.FetchTDAccount(port.TDAccountId)
 	if err != nil {

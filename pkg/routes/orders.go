@@ -48,7 +48,7 @@ func fetchOrdersHandler(userId *int, w http.ResponseWriter, r *http.Request) {
 	writeJsonResponse(w, orders)
 }
 
-func upsertOrderHandler(userId *int, w http.ResponseWriter, r *http.Request) {
+func upsertOrderHandler(userId *int, port *wardrobe.Portfolio, w http.ResponseWriter, r *http.Request) {
 	var u UpsertOrderRequest
 	err := decodeJSONBody(w, r, &u)
 	if err != nil {
@@ -80,7 +80,7 @@ func upsertOrderHandler(userId *int, w http.ResponseWriter, r *http.Request) {
 	writeJsonResponse(w, orders)
 }
 
-func deleteOrderHandler(userId *int, w http.ResponseWriter, r *http.Request) {
+func deleteOrderHandler(userId *int, port *wardrobe.Portfolio, w http.ResponseWriter, r *http.Request) {
 	var deleteOrderRequest DeleteOrderRequest
 	err := decodeJSONBody(w, r, &deleteOrderRequest)
 	if err != nil {
@@ -103,23 +103,10 @@ func deleteOrderHandler(userId *int, w http.ResponseWriter, r *http.Request) {
 	writeJsonResponse(w, orders)
 }
 
-func reloadOrderHandler(userId *int, w http.ResponseWriter, r *http.Request) {
-	var req GenericPortIdRequest
-	err := decodeJSONBody(w, r, &req)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		log.Printf("Bad request: %v", err)
-		return
-	}
-	port, err := wardrobe.FetchPortfolioById(req.PortId)
-	if err != nil {
-		log.Printf("Unable to locate portfolio with id %d", req.PortId)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
+func reloadOrderHandler(userId *int, port *wardrobe.Portfolio, w http.ResponseWriter, r *http.Request) {
 	if port.Type == "tda" {
 		log.Print("Reloading tda orders...")
-		err = validateTdaUsage(*port, *userId)
+		err := validateTdaUsage(*port, *userId)
 		if err != nil {
 			log.Printf("Unable to validate td account usage: %v", err)
 			return
@@ -129,7 +116,7 @@ func reloadOrderHandler(userId *int, w http.ResponseWriter, r *http.Request) {
 		stock := stockings.IexApi{}
 		err = poncho.ReloadOrders(order, stock)
 		if err != nil {
-			log.Printf("Unable to reload orders with tda api!")
+			log.Printf("Unable to reload orders with tda api: %v", err)
 			return
 		}
 	}

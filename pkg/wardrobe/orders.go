@@ -48,31 +48,49 @@ func FetchOrdersByUserId(userId int) ([]Order, error) {
 	return orders, nil
 }
 
-func FetchOrderByUid(uid string) (*Order, error) {
+// TODO refactor this with function above, sharing a ton of similar code
+func FetchOrdersByPortfolioId(portId int) ([]Order, error) {
 	rows, err := db.Query(`
-		SELECT o.uid, o.port_id, s.ticker, o.quantity, o.value, o.is_buy, o.manually_added, o.date 
+		SELECT o.uid, o.port_id, s.ticker, o.quantity, o.value, o.is_buy, o.manually_added, o.date
 		FROM orders o
-		JOIN stocks s ON o.stock_id=s.id
-		WHERE uid=$1`, uid)
+		JOIN stocks s ON s.id=o.stock_id
+		WHERE o.port_id=$1`, portId)
 	if err != nil {
 		return nil, err
 	}
-	if !rows.Next() {
-		return nil, fmt.Errorf("unable to find order with uid %s", uid)
+	var orders []Order
+	for rows.Next() {
+		var o Order
+		err = rows.Scan(&o.Uid, &o.PortId, &o.Stock, &o.Quantity, &o.Value, &o.IsBuy, &o.ManuallyAdded, &o.Date)
+		if err != nil {
+			return nil, err
+		}
+		orders = append(orders, o)
 	}
-	var o Order
-	err = rows.Scan(&o.Uid, &o.PortId, &o.Stock, &o.Quantity, &o.Value, &o.IsBuy, &o.ManuallyAdded, &o.Date)
+	if orders == nil {
+		return make([]Order, 0), nil
+	}
+	return orders, nil
+}
+
+// Inserts order if uid doesn't exist already
+func InsertIgnoreOrder(o Order) error {
+	_, err := db.Exec(`INSERT INTO stocks (ticker) VALUES ($1) ON CONFLICT (ticker) DO NOTHING`, o.Stock)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	if rows.Next() {
-		return nil, fmt.Errorf("multiple transfers found with uid %s", uid)
-	}
-	return &o, nil
+	_, err = db.Exec(`
+		INSERT INTO orders (uid, port_id, stock_id, quantity, value, is_buy, manually_added, date)
+			SELECT $1, $2, stocks.id, $4, $5, $6, $7, $8
+			FROM stocks
+			WHERE ticker=$3
+		ON CONFLICT(uid) DO NOTHING`,
+		o.Uid, o.PortId, o.Stock, o.Quantity, o.Value, o.IsBuy, o.ManuallyAdded, o.Date)
+	return err
 }
 
 func UpsertOrder(o Order) error {
-	_, err := db.Exec(`INSERT INTO stocks (ticker) VALUES ($1) ON CONFLICT (ticker) DO NOTHING`, o.Stock)
+	err := UpsertStock(o.Stock)
 	if err != nil {
 		return err
 	}
@@ -90,4 +108,20 @@ func UpsertOrder(o Order) error {
 func DeleteOrder(uid string, portId int) error {
 	_, err := db.Exec(`DELETE FROM orders WHERE uid=$1 AND port_id=$2`, uid, portId)
 	return err
+}
+
+func GetMaxOrderUpdatedAt(portId int) (*time.Time, error) {
+	rows, err := db.Query(`SELECT MAX(updated_at) FROM orders WHERE port_id=$1`, portId)
+	if err != nil {
+		return nil, err
+	}
+	if !rows.Next() {
+		return nil, fmt.Errorf("no rows found for orders with port_id %d", portId)
+	}
+	var ts time.Time
+	err = rows.Scan(&ts)
+	if err != nil {
+		return nil, err
+	}
+	return &ts, nil
 }

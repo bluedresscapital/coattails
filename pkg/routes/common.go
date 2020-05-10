@@ -61,7 +61,7 @@ type GenericPortIdRequest struct {
 	PortId int `json:"port_id"`
 }
 
-func portAuthMiddleware(handler func(*int, http.ResponseWriter, *http.Request)) http.HandlerFunc {
+func portAuthMiddleware(handler func(*int, *wardrobe.Portfolio, http.ResponseWriter, *http.Request)) http.HandlerFunc {
 	return authMiddleware(func(userId *int, w http.ResponseWriter, r *http.Request) {
 		req := new(GenericPortIdRequest)
 		// NOTE(ma): this is some interesting tech - not sure if this can be improved LOL
@@ -90,7 +90,7 @@ func portAuthMiddleware(handler func(*int, http.ResponseWriter, *http.Request)) 
 			log.Printf("Unauthorized access of port id %d by user %d", req.PortId, *userId)
 			return
 		}
-		handler(userId, w, r)
+		handler(userId, port, w, r)
 	})
 }
 

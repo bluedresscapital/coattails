@@ -3,6 +3,7 @@ package routes
 import (
 	"github.com/bluedresscapital/coattails/pkg/poncho"
 	"github.com/bluedresscapital/coattails/pkg/socks"
+	"github.com/bluedresscapital/coattails/pkg/stockings"
 	"github.com/bluedresscapital/coattails/pkg/tda"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"github.com/gorilla/mux"
@@ -45,7 +46,7 @@ func fetchTransfersHandler(userId *int, w http.ResponseWriter, r *http.Request) 
 	writeJsonResponse(w, transfers)
 }
 
-func upsertTransferHandler(userId *int, w http.ResponseWriter, r *http.Request) {
+func upsertTransferHandler(userId *int, port *wardrobe.Portfolio, w http.ResponseWriter, r *http.Request) {
 	var req UpsertTransferRequest
 	err := decodeJSONBody(w, r, &req)
 	if err != nil {
@@ -75,7 +76,7 @@ func upsertTransferHandler(userId *int, w http.ResponseWriter, r *http.Request) 
 	writeJsonResponse(w, ts)
 }
 
-func deleteTransferHandler(userId *int, w http.ResponseWriter, r *http.Request) {
+func deleteTransferHandler(userId *int, port *wardrobe.Portfolio, w http.ResponseWriter, r *http.Request) {
 	var deleteTransferRequest DeleteTransferRequest
 	err := decodeJSONBody(w, r, &deleteTransferRequest)
 	if err != nil {
@@ -97,28 +98,16 @@ func deleteTransferHandler(userId *int, w http.ResponseWriter, r *http.Request) 
 	writeJsonResponse(w, ts)
 }
 
-func reloadTransferHandler(userId *int, w http.ResponseWriter, r *http.Request) {
-	var req GenericPortIdRequest
-	err := decodeJSONBody(w, r, &req)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		log.Printf("Bad request: %v", err)
-		return
-	}
-	port, err := wardrobe.FetchPortfolioById(req.PortId)
-	if err != nil {
-		log.Printf("Unable to locate portfolio with id %d", req.PortId)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
+func reloadTransferHandler(userId *int, port *wardrobe.Portfolio, w http.ResponseWriter, r *http.Request) {
 	if port.Type == "tda" {
-		err = validateTdaUsage(*port, *userId)
+		err := validateTdaUsage(*port, *userId)
 		if err != nil {
 			log.Printf("Unable to validate td account usage: %v", err)
 			return
 		}
 		transfer := tda.API{AccountId: port.TDAccountId}
-		err = poncho.ReloadTransfers(transfer)
+		stock := stockings.IexApi{}
+		err = poncho.ReloadTransfers(transfer, stock)
 		if err != nil {
 			log.Printf("Unable to reload transfers: %v", err)
 			return
