@@ -76,7 +76,7 @@ func (piq PiquetteAPI) GetHistoricalPrice(ticker string, date time.Time) (*Histo
 	// a sus inefficient way is subtract a year from end date and get the start date
 
 	params := &chart.Params{
-		Symbol:   "meli",
+		Symbol:   ticker,
 		Interval: datetime.OneDay,
 		Start:    &startDate,
 		End:      &endDate,
@@ -85,6 +85,7 @@ func (piq PiquetteAPI) GetHistoricalPrice(ticker string, date time.Time) (*Histo
 	// need to write in the values of our iterator into some structure, which is a list? or just create a list variable
 	iter := chart.Get(params)
 	for iter.Next() {
+		// KEEP RE ASSIGNING THE VALUE HERE, then you don't need the array - keep reassinging the pointer value
 		*historical = append(*historical, *iter.Bar())
 
 	}
@@ -101,4 +102,50 @@ func (piq PiquetteAPI) GetHistoricalPrice(ticker string, date time.Time) (*Histo
 
 	return &(HistoricalStock{time.Unix(int64(quoteAtDate.Timestamp), 0), quoteAtDate.AdjClose}), nil
 
+}
+
+// now we are writing a GetHistoricalRange function
+func (piq PiquetteAPI) GetHistoricalRange(ticker string, start time.Time, end time.Time) (*HistoricalStocks, error) {
+
+	// a HUGE portion of this is a repeat with GetCurrentPrice, perhaps I should seperate it out into its own function
+	historicalRange := new(piqHistoricalStocks)
+
+	startDate := datetime.Datetime{
+		Year:  start.Year(),
+		Month: int(start.Month()),
+		Day:   start.Day(),
+	}
+
+	endDate := datetime.Datetime{
+		Year:  end.Year(),
+		Month: int(end.Month()),
+		Day:   end.Day(),
+	}
+
+	params := &chart.Params{
+		Symbol:   ticker,
+		Interval: datetime.OneDay,
+		Start:    &startDate,
+		End:      &endDate,
+	}
+
+	iter := chart.Get(params)
+	for iter.Next() {
+		*historicalRange = append(*historicalRange, *iter.Bar())
+
+	}
+	err := iter.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return piqConvertToHistoricalRange(historicalRange), nil
+}
+
+func piqConvertToHistoricalRange(stocks *piqHistoricalStocks) *HistoricalStocks {
+	ret := new(HistoricalStocks)
+	for i := 0; i < len(*stocks); i++ {
+		*ret = append(*ret, HistoricalStock{time.Unix(int64((*stocks)[i].Timestamp), 0), (*stocks)[i].AdjClose})
+	}
+	return ret
 }

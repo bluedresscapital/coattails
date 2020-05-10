@@ -37,6 +37,14 @@ func checkPiquette(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Fprintln(w, "am i here")
 	fmt.Fprintln(w, testHistoric.Price)
+
+	start, _ := time.Parse(stockings.DateLayout, "20200101")
+	end, _ := time.Parse(stockings.DateLayout, "20200105")
+	testHistoricRange, err := api.GetHistoricalRange("meli", start, end)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Fprintln(w, testHistoricRange)
+
 }
