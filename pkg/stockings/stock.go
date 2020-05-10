@@ -1,8 +1,9 @@
 package stockings
 
 import (
-	"github.com/shopspring/decimal"
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 /*
@@ -17,6 +18,10 @@ type StockAPI interface {
 	GetHistoricalPrice(ticker string, date time.Time) (*HistoricalStock, error)
 	GetHistoricalRange(ticker string, start time.Time, end time.Time) (*HistoricalStocks, error)
 }
+
+const (
+	DateLayout = "20060102"
+)
 
 type Stock struct {
 	Symbol        string

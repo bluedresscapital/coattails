@@ -17,6 +17,7 @@ package routes
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/bluedresscapital/coattails/pkg/stockings"
 )
@@ -24,8 +25,18 @@ import (
 func checkPiquette(w http.ResponseWriter, r *http.Request) {
 	api := stockings.PiquetteAPI{}
 	testQuote, err := api.GetCurrentPrice("MELI")
-	fmt.Fprintln(w, testQuote.LatestPrice)
 	if err != nil {
 		fmt.Println(err)
 	}
+	fmt.Fprintln(w, testQuote.LatestPrice)
+
+	// this creates a time.time format i assume
+	date, _ := time.Parse(stockings.DateLayout, "20200102")
+	testHistoric, err := api.GetHistoricalPrice("meli", date)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Fprintln(w, "am i here")
+	fmt.Fprintln(w, testHistoric.Price)
 }
