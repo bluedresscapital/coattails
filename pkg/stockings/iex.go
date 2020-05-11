@@ -42,6 +42,7 @@ const (
 	iexHistoricalDateUrl      = "https://cloud.iexapis.com/stable/stock/%s/chart/date/%s?chartByDay=true&token=%s"
 	//https://cloud.iexapis.com/stable/stock/MELI/chart/date/20200102?chartByDay=true&token=pk_ec21611ca5f5492e9397b4a1879ff114
 	iexDateLayout = "2006-01-02"
+	DateLayout    = "20060102"
 )
 
 //example for ralles, he should refactor this to better handle error checking etc

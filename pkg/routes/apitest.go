@@ -3,16 +3,16 @@ package routes
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/bluedresscapital/coattails/pkg/stockings"
 	"net/http"
 	"time"
+
+	"github.com/bluedresscapital/coattails/pkg/stockings"
 )
 
 func apiCheck(w http.ResponseWriter, r *http.Request) {
 	api := stockings.IexApi{}
 	aObj, err := api.GetCurrentPrice("MELI")
-	//a, _ := json.Marshal(aObj)
-	fmt.Fprintln(w, aObj.Name)
+	fmt.Fprintln(w, aObj.LatestPrice)
 	if err != nil {
 		fmt.Println(err)
 	}

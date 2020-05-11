@@ -1,19 +1,5 @@
 package routes
 
-// import (
-// 	//"encoding/json"
-// 	"fmt"
-// 	//"github.com/bluedresscapital/coattails/pkg/stockings"
-// 	"net/http"
-// 	//"time"
-// )
-
-// func middleOutTest(w http.ResponseWriter, r *http.Request) {
-// 	fmt.Fprintf(w, "ping!")
-// }
-
-// for now I will try to use this to test my go api
-
 import (
 	"fmt"
 	"net/http"
@@ -40,7 +26,7 @@ func checkPiquette(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, testHistoric.Price)
 
 	start, _ := time.Parse(stockings.DateLayout, "20200101")
-	end, _ := time.Parse(stockings.DateLayout, "20200105")
+	end, _ := time.Parse(stockings.DateLayout, "20200107")
 	testHistoricRange, err := api.GetHistoricalRange("meli", start, end)
 	if err != nil {
 		fmt.Println(err)

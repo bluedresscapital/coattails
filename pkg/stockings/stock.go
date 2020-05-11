@@ -19,10 +19,6 @@ type StockAPI interface {
 	GetHistoricalRange(ticker string, start time.Time, end time.Time) (*HistoricalStocks, error)
 }
 
-const (
-	DateLayout = "20060102"
-)
-
 type Stock struct {
 	Symbol        string
 	Name          string

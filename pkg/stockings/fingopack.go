@@ -26,7 +26,7 @@ func (piq FingoPack) GetCurrentPrice(ticker string) (*Stock, error) {
 		return nil, err
 	}
 
-	// need to convert our types to match our universal Stock struct - should this be broken out into a seperate function?
+	// need to convert our types to match our universal Stock struct
 	// some of the types are already correct, but listed them all out for clarity
 	// finance.quote has a HUGE variety of info in it that we can pull
 	symbol := quote.Symbol
@@ -40,47 +40,18 @@ func (piq FingoPack) GetCurrentPrice(ticker string) (*Stock, error) {
 }
 
 // GetHistoricalPrice is hacky because Fingo only has a function that returns quotes in a time span
-// This function takes in the desired date as the end date, then sets the start date as one month prior
+// This function takes in the desired date as the end date, then sets the start date as five days prior
 func (piq FingoPack) GetHistoricalPrice(ticker string, date time.Time) (*HistoricalStock, error) {
 
 	quoteAtDate := new(finance.ChartBar)
 
-	// converting the time.Time struct into usuable integers to be fed into Fingo
-	year := date.Year()
-	month := int(date.Month())
-	day := date.Day()
+	// creating a hypothetical start five days before (is this long enough)
+	adjStart := date.AddDate(0, 0, -5)
+	// ending date is set at desired date + 1 day because of how financego slices its range
+	adjEnd := date.AddDate(0, 0, 1)
 
-	// converting into our accepted Fingo form
-	endDate := datetime.Datetime{
-		Year:  year,
-		Month: month,
-		Day:   day,
-	}
-
-	// this brings our month down by one
-	if month == 1 {
-		month = 12
-		year--
-	}
-
-	// now we can set our start date which is just one month prior - perhaps this part should be put in a seperate function
-	startDate := datetime.Datetime{
-		Year:  year,
-		Month: month,
-		Day:   day,
-	}
-
-	// now we are using the Fingo steps to get historical stock info in a range
-	// set our paratemters which are self explanatory
-	params := &chart.Params{
-		Symbol:   ticker,
-		Interval: datetime.OneDay,
-		Start:    &startDate,
-		End:      &endDate,
-	}
-
-	// a little bit of blackboxing here, but this iter contains all the information we need
-	iter := chart.Get(params)
+	// returns and Iter that holds all the information we need
+	iter := getBarChartIter(ticker, adjStart, adjEnd)
 
 	// iter.Next() eventually equals false when you've finished
 	for iter.Next() {
@@ -101,34 +72,14 @@ func (piq FingoPack) GetHistoricalPrice(ticker string, date time.Time) (*Histori
 
 }
 
-// GetHistoricalRange is nearly identical to GetHistoricalPrice, but there are some nuances - might not be able to create a seperate helper function
+// GetHistoricalRange is nearly identical to GetHistoricalPrice, but takes in two dates, so we don't need to create a hypothetical start date
 func (piq FingoPack) GetHistoricalRange(ticker string, start time.Time, end time.Time) (*HistoricalStocks, error) {
 
 	// need to create a piqHistoricalStocks type that is a list of finance.ChartBar
 	historicalRange := new(piqHistoricalStocks)
-
-	// just setting our start and end date based on what we were given
-	startDate := datetime.Datetime{
-		Year:  start.Year(),
-		Month: int(start.Month()),
-		Day:   start.Day(),
-	}
-
-	endDate := datetime.Datetime{
-		Year:  end.Year(),
-		Month: int(end.Month()),
-		Day:   end.Day(),
-	}
-
-	// setting params, same as GetHistoricalPrice
-	params := &chart.Params{
-		Symbol:   ticker,
-		Interval: datetime.OneDay,
-		Start:    &startDate,
-		End:      &endDate,
-	}
-
-	iter := chart.Get(params)
+	// similar reasoning as previous function, need to +1 day (we can adjust this depending on how we interpret "GetHistoricalRange")
+	adjEnd := end.AddDate(0, 0, 1)
+	iter := getBarChartIter(ticker, start, adjEnd)
 
 	// now we need to append to our historicalRange becuase we are interested in the entire range
 	for iter.Next() {
@@ -156,4 +107,22 @@ func piqConvertToHistoricalRange(stocks *piqHistoricalStocks) *HistoricalStocks 
 	}
 
 	return ret
+}
+
+// getBarChartIter is a private function that returns a financego chart.Iter type
+func getBarChartIter(ticker string, start time.Time, end time.Time) *chart.Iter {
+
+	// converting the time.Time format to an accepted financego format
+	fingoStart := datetime.New(&start)
+	fingoEnd := datetime.New(&end)
+
+	params := &chart.Params{
+		Symbol:   ticker,
+		Interval: datetime.OneDay,
+		Start:    fingoStart,
+		End:      fingoEnd,
+	}
+
+	// a little bit of blackboxing here, but this iter contains all the information we need
+	return chart.Get(params)
 }
