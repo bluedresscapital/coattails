@@ -121,7 +121,8 @@ func GetMaxOrderUpdatedAt(portId int) (*time.Time, error) {
 	var ts time.Time
 	err = rows.Scan(&ts)
 	if err != nil {
-		return nil, err
+		t := time.Now()
+		return &t, nil
 	}
 	return &ts, nil
 }
