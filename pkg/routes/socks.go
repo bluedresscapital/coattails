@@ -15,7 +15,7 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-func getChannelFromUserId(userId int) string {
+func GetChannelFromUserId(userId int) string {
 	return fmt.Sprintf("chanel_user_id_%d", userId)
 }
 
@@ -28,7 +28,7 @@ func testWebSocket(userId *int, w http.ResponseWriter, r *http.Request) {
 		log.Printf("err upgrading: %v", err)
 		return
 	}
-	channel := getChannelFromUserId(*userId)
+	channel := GetChannelFromUserId(*userId)
 	log.Printf("Creating web socket connection for channel %s!", channel)
 	sub := wardrobe.Sub(channel)
 	client := socks.Client{

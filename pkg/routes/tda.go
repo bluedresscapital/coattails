@@ -1,15 +1,10 @@
 package routes
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"github.com/bluedresscapital/coattails/pkg/poncho"
-	"github.com/bluedresscapital/coattails/pkg/stockings"
 	"github.com/bluedresscapital/coattails/pkg/tda"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"github.com/gorilla/mux"
-	"io/ioutil"
 	"log"
 	"net/http"
 )
@@ -23,7 +18,6 @@ func registerTDARoutes(r *mux.Router) {
 	s := r.PathPrefix("/tda").Subrouter()
 	s.HandleFunc("", authMiddleware(fetchTDAccountsHandler)).Methods("GET")
 	s.HandleFunc("/portfolio/create", authMiddleware(createTDPortfolioHandler)).Methods("POST")
-	s.HandleFunc("/order/reload", tdAuthMiddleware(reloadTDOrderHandler)).Methods("POST")
 }
 
 func fetchTDAccountsHandler(userId *int, w http.ResponseWriter, r *http.Request) {
@@ -69,46 +63,6 @@ func createTDPortfolioHandler(userId *int, w http.ResponseWriter, r *http.Reques
 		return
 	}
 	writeJsonResponse(w, portfolios)
-}
-
-func reloadTDOrderHandler(tdAccountId *int, w http.ResponseWriter, r *http.Request) {
-	order := tda.API{AccountId: *tdAccountId}
-	// TODO - change this to a different API :)
-	stock := stockings.IexApi{}
-	err := poncho.ReloadOrders(order, stock)
-	if err != nil {
-		log.Printf("Damn we failed: %v", err)
-	} else {
-		log.Printf("Succcess!")
-	}
-}
-
-func tdAuthMiddleware(handler func(*int, http.ResponseWriter, *http.Request)) http.HandlerFunc {
-	return authMiddleware(func(userId *int, w http.ResponseWriter, r *http.Request) {
-		req := new(TDAPIRequest)
-		bodyBytes, _ := ioutil.ReadAll(r.Body)
-		r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
-		err := json.NewDecoder(r.Body).Decode(req)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			log.Printf("Error decoding request into generic port id request: %v", err)
-			return
-		}
-		// We re-insert the request body here
-		r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
-		tdAcc, err := wardrobe.FetchTDAccount(req.TDAccountID)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			log.Printf("Unable to fetch td account with id %d", req.TDAccountID)
-			return
-		}
-		if tdAcc.UserId != *userId {
-			w.WriteHeader(http.StatusUnauthorized)
-			log.Printf("Unauthorized access of td account id %d by user %d", req.TDAccountID, *userId)
-			return
-		}
-		handler(&req.TDAccountID, w, r)
-	})
 }
 
 // Verifies that the portfolio's tda_account is in fact owned by the user id

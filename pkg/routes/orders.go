@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"github.com/bluedresscapital/coattails/pkg/diapers"
 	"github.com/bluedresscapital/coattails/pkg/poncho"
 	"github.com/bluedresscapital/coattails/pkg/socks"
 	"github.com/bluedresscapital/coattails/pkg/stockings"
@@ -71,6 +72,10 @@ func upsertOrderHandler(userId *int, port *wardrobe.Portfolio, w http.ResponseWr
 		log.Printf("Error in upserting order: %v", err)
 		return
 	}
+	err = diapers.ReloadDepsAndPublish(diapers.Order, port.Id, *userId, GetChannelFromUserId(*userId))
+	if err != nil {
+		return
+	}
 	orders, err := wardrobe.FetchOrdersByUserId(*userId)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -94,6 +99,10 @@ func deleteOrderHandler(userId *int, port *wardrobe.Portfolio, w http.ResponseWr
 		log.Printf("Error in deleting order: %v", err)
 		return
 	}
+	err = diapers.ReloadDepsAndPublish(diapers.Order, port.Id, *userId, GetChannelFromUserId(*userId))
+	if err != nil {
+		return
+	}
 	orders, err := wardrobe.FetchOrdersByUserId(*userId)
 	if err != nil {
 		log.Printf("Error fetching orders: %v", err)
@@ -112,16 +121,17 @@ func reloadOrderHandler(userId *int, port *wardrobe.Portfolio, w http.ResponseWr
 			return
 		}
 		order := tda.API{AccountId: port.TDAccountId}
-		// TODO - change this to a different API :)
 		stock := stockings.IexApi{}
-		err = poncho.ReloadOrders(order, stock)
-		if err != nil {
-			log.Printf("Unable to reload orders with tda api: %v", err)
-			return
+		needsUpdate, err := poncho.ReloadOrders(order, stock)
+		if needsUpdate {
+			err = diapers.ReloadDepsAndPublish(diapers.Order, port.Id, *userId, GetChannelFromUserId(*userId))
+			if err != nil {
+				return
+			}
 		}
 	}
 	orders, err := wardrobe.FetchOrdersByUserId(*userId)
-	err = socks.PublishFromServer(getChannelFromUserId(*userId), "RELOADED_ORDERS", orders)
+	err = socks.PublishFromServer(GetChannelFromUserId(*userId), "RELOADED_ORDERS", orders)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

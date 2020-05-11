@@ -4,9 +4,11 @@ import (
 	"github.com/bluedresscapital/coattails/pkg/stockings"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"github.com/shopspring/decimal"
+	"log"
 )
 
 func ReloadPositions(portId int, stockAPI stockings.StockAPI) error {
+	log.Printf("Reloading positions for port %d", portId)
 	orders, err := wardrobe.FetchOrdersByPortfolioId(portId)
 	if err != nil {
 		return err

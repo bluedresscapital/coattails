@@ -34,7 +34,7 @@ type HistoricalStock struct {
 type HistoricalStocks []HistoricalStock
 
 func GetHistoricalPrice(stock StockAPI, ticker string, date time.Time) (*decimal.Decimal, error) {
-	// TODO
+	// TODO (ralles)
 	// 1. First, check if that price is in our DB
 
 	// 2. If not, return api call:
@@ -48,5 +48,6 @@ func GetHistoricalPrice(stock StockAPI, ticker string, date time.Time) (*decimal
 }
 
 func GetCurrentPrice(stock StockAPI) (*decimal.Decimal, error) {
+	// TODO (ralles)
 	return &decimal.Zero, nil
 }

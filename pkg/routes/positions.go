@@ -15,6 +15,13 @@ func registerPositionRoutes(r *mux.Router) {
 }
 
 func fetchPositionsHandler(userId *int, w http.ResponseWriter, r *http.Request) {
+	positions, err := wardrobe.FetchPositions(*userId)
+	if err != nil {
+		log.Printf("Error fetching positions: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	writeJsonResponse(w, positions)
 	return
 }
 

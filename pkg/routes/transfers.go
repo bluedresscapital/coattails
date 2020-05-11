@@ -1,9 +1,9 @@
 package routes
 
 import (
+	"github.com/bluedresscapital/coattails/pkg/diapers"
 	"github.com/bluedresscapital/coattails/pkg/poncho"
 	"github.com/bluedresscapital/coattails/pkg/socks"
-	"github.com/bluedresscapital/coattails/pkg/stockings"
 	"github.com/bluedresscapital/coattails/pkg/tda"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"github.com/gorilla/mux"
@@ -62,10 +62,13 @@ func upsertTransferHandler(userId *int, port *wardrobe.Portfolio, w http.Respons
 		ManuallyAdded: true,
 		Date:          req.Date,
 	})
-
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		log.Printf("Errored on insert: %v", err)
+		return
+	}
+	err = diapers.ReloadDepsAndPublish(diapers.Transfer, port.Id, *userId, GetChannelFromUserId(*userId))
+	if err != nil {
 		return
 	}
 	ts, err := wardrobe.FetchTransfersbyUserId(*userId)
@@ -90,6 +93,10 @@ func deleteTransferHandler(userId *int, port *wardrobe.Portfolio, w http.Respons
 		log.Printf("Error in deleting transfer: %v", err)
 		return
 	}
+	err = diapers.ReloadDepsAndPublish(diapers.Transfer, port.Id, *userId, GetChannelFromUserId(*userId))
+	if err != nil {
+		return
+	}
 	ts, err := wardrobe.FetchTransfersbyUserId(*userId)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -106,15 +113,16 @@ func reloadTransferHandler(userId *int, port *wardrobe.Portfolio, w http.Respons
 			return
 		}
 		transfer := tda.API{AccountId: port.TDAccountId}
-		stock := stockings.IexApi{}
-		err = poncho.ReloadTransfers(transfer, stock)
-		if err != nil {
-			log.Printf("Unable to reload transfers: %v", err)
-			return
+		needsUpdate, err := poncho.ReloadTransfers(transfer)
+		if needsUpdate {
+			err = diapers.ReloadDepsAndPublish(diapers.Transfer, port.Id, *userId, GetChannelFromUserId(*userId))
+			if err != nil {
+				return
+			}
 		}
 	}
 	ts, err := wardrobe.FetchTransfersbyUserId(*userId)
-	err = socks.PublishFromServer(getChannelFromUserId(*userId), "RELOADED_TRANSFERS", ts)
+	err = socks.PublishFromServer(GetChannelFromUserId(*userId), "RELOADED_TRANSFERS", ts)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
