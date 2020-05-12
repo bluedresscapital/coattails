@@ -16,7 +16,6 @@ func checkPiquette(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Fprintln(w, testQuote.LatestPrice)
 
-	// this creates a time.time format i assume
 	date, _ := time.Parse(stockings.DateLayout, "20200102")
 	testHistoric, err := api.GetHistoricalPrice("meli", date)
 
