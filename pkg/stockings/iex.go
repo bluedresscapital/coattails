@@ -41,8 +41,8 @@ const (
 	iexHistoricalDateRangeUrl = "https://cloud.iexapis.com/stable/stock/%s/chart/%s?token=%s"
 	iexHistoricalDateUrl      = "https://cloud.iexapis.com/stable/stock/%s/chart/date/%s?chartByDay=true&token=%s"
 	//https://cloud.iexapis.com/stable/stock/MELI/chart/date/20200102?chartByDay=true&token=pk_ec21611ca5f5492e9397b4a1879ff114
+	iexDateLayout = "2006-01-02"
 	DateLayout    = "20060102"
-	IexDateLayout = "2006-01-02"
 )
 
 //example for ralles, he should refactor this to better handle error checking etc
@@ -86,7 +86,7 @@ func (iex IexApi) GetHistoricalPrice(ticker string, date time.Time) (*Historical
 	if len(*historical) != 1 {
 		return nil, errors.New("did not return singular value after unmarshall")
 	}
-	formattedDate, _ := time.Parse(IexDateLayout, (*historical)[0].Date)
+	formattedDate, _ := time.Parse(iexDateLayout, (*historical)[0].Date)
 	return &(HistoricalStock{formattedDate, (*historical)[0].Price}), nil
 }
 
@@ -199,14 +199,14 @@ func endOfHistoricalRange(historicalPrices *iexHistoricalStocks, endDate string)
 }
 
 func translateIexDate(date string) string {
-	startDate, _ := time.Parse(IexDateLayout, date)
+	startDate, _ := time.Parse(iexDateLayout, date)
 	return startDate.Format(DateLayout)
 }
 
 func convertToHistoricalRange(stocks *iexHistoricalStocks) *HistoricalStocks {
 	ret := new(HistoricalStocks)
 	for i := 0; i < len(*stocks); i++ {
-		formattedDate, _ := time.Parse(IexDateLayout, (*stocks)[i].Date)
+		formattedDate, _ := time.Parse(iexDateLayout, (*stocks)[i].Date)
 		*ret = append(*ret, HistoricalStock{formattedDate, (*stocks)[i].Price})
 	}
 	return ret
