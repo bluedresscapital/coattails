@@ -37,8 +37,7 @@ func (piq FingoPack) GetCurrentPrice(ticker string) (*Stock, error) {
 // we use the GetHistoricalRange function and set our start date to 5 days prior becuase there has to be a valid open market date in the range
 func (piq FingoPack) GetHistoricalPrice(ticker string, date time.Time) (*HistoricalStock, error) {
 
-	api := FingoPack{}
-	historicalQuotes, err := api.GetHistoricalRange(ticker, date.AddDate(0, 0, -5), date)
+	historicalQuotes, err := piq.GetHistoricalRange(ticker, date.AddDate(0, 0, -5), date)
 
 	if err != nil {
 		return nil, err
