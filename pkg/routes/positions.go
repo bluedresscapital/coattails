@@ -1,10 +1,11 @@
 package routes
 
 import (
-	"github.com/bluedresscapital/coattails/pkg/wardrobe"
-	"github.com/gorilla/mux"
 	"log"
 	"net/http"
+
+	"github.com/bluedresscapital/coattails/pkg/wardrobe"
+	"github.com/gorilla/mux"
 )
 
 func registerPositionRoutes(r *mux.Router) {

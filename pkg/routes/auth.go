@@ -2,13 +2,14 @@ package routes
 
 import (
 	"encoding/json"
+	"log"
+	"net/http"
+	"time"
+
 	"github.com/bluedresscapital/coattails/pkg/auth"
 	"github.com/bluedresscapital/coattails/pkg/sundress"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"github.com/gorilla/mux"
-	"log"
-	"net/http"
-	"time"
 )
 
 // Registers auth routes for coattails server

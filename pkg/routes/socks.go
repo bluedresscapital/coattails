@@ -2,12 +2,13 @@ package routes
 
 import (
 	"fmt"
+	"log"
+	"net/http"
+
 	"github.com/bluedresscapital/coattails/pkg/socks"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
-	"log"
-	"net/http"
 )
 
 var upgrader = websocket.Upgrader{

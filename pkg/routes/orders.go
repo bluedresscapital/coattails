@@ -1,6 +1,10 @@
 package routes
 
 import (
+	"log"
+	"net/http"
+	"time"
+
 	"github.com/bluedresscapital/coattails/pkg/diapers"
 	"github.com/bluedresscapital/coattails/pkg/poncho"
 	"github.com/bluedresscapital/coattails/pkg/socks"
@@ -9,9 +13,6 @@ import (
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"github.com/gorilla/mux"
 	"github.com/shopspring/decimal"
-	"log"
-	"net/http"
-	"time"
 )
 
 type UpsertOrderRequest struct {

@@ -1,11 +1,12 @@
 package tda
 
 import (
+	"strconv"
+	"time"
+
 	"github.com/bluedresscapital/coattails/pkg/poncho"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"github.com/shopspring/decimal"
-	"strconv"
-	"time"
 )
 
 type API struct {

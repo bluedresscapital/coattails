@@ -2,8 +2,9 @@ package wardrobe
 
 import (
 	"fmt"
-	"github.com/shopspring/decimal"
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 // TODO: move this into stockings when rishov merges.

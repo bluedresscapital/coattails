@@ -2,9 +2,10 @@ package socks
 
 import (
 	"encoding/json"
+	"log"
+
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"github.com/google/uuid"
-	"log"
 )
 
 type ReduxEvent struct {

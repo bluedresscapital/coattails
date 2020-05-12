@@ -2,10 +2,11 @@ package routes
 
 import (
 	"fmt"
-	"github.com/bluedresscapital/coattails/pkg/sundress"
-	"github.com/gorilla/mux"
 	"log"
 	"net/http"
+
+	"github.com/bluedresscapital/coattails/pkg/sundress"
+	"github.com/gorilla/mux"
 )
 
 func testHandler(w http.ResponseWriter, r *http.Request) {

@@ -5,14 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/bluedresscapital/coattails/pkg/wardrobe"
-	"github.com/go-redis/redis/v7"
-	"github.com/golang/gddo/httputil/header"
 	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
+
+	"github.com/bluedresscapital/coattails/pkg/wardrobe"
+	"github.com/go-redis/redis/v7"
+	"github.com/golang/gddo/httputil/header"
 )
 
 type malformedRequest struct {

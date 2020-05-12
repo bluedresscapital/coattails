@@ -3,9 +3,10 @@ package routes
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/bluedresscapital/coattails/pkg/stockings"
 	"net/http"
 	"time"
+
+	"github.com/bluedresscapital/coattails/pkg/stockings"
 )
 
 func apiCheck(w http.ResponseWriter, r *http.Request) {

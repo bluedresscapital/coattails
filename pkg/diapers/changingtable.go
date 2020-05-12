@@ -2,11 +2,12 @@ package diapers
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/bluedresscapital/coattails/pkg/poncho"
 	"github.com/bluedresscapital/coattails/pkg/socks"
 	"github.com/bluedresscapital/coattails/pkg/stockings"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
-	"log"
 )
 
 type Data string

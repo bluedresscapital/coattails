@@ -2,11 +2,12 @@ package routes
 
 import (
 	"fmt"
+	"log"
+	"net/http"
+
 	"github.com/bluedresscapital/coattails/pkg/tda"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"github.com/gorilla/mux"
-	"log"
-	"net/http"
 )
 
 type TDAPIRequest struct {

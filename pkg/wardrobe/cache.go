@@ -2,8 +2,9 @@ package wardrobe
 
 import (
 	"fmt"
-	"github.com/go-redis/redis/v7"
 	"log"
+
+	"github.com/go-redis/redis/v7"
 )
 
 var (

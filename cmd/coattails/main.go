@@ -4,6 +4,12 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"time"
+
 	"github.com/bluedresscapital/coattails/pkg/routes"
 	"github.com/bluedresscapital/coattails/pkg/stockings"
 	"github.com/bluedresscapital/coattails/pkg/sundress"
@@ -11,11 +17,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"github.com/rs/cors"
-	"log"
-	"net/http"
-	"os"
-	"os/signal"
-	"time"
 )
 
 func initDeps() time.Duration {
@@ -65,7 +66,7 @@ func main() {
 	wait := initDeps()
 	r := mux.NewRouter().StrictSlash(true)
 	handler := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000", "http://127.0.0.1:3000", "http://bdc-web:38001"},
+		AllowedOrigins:   []string{"http://localhost:3000", "http://127.0.0.1:3000", "http://bdc-web:38001", "http://localhost:5000"},
 		AllowCredentials: true,
 	}).Handler(r)
 

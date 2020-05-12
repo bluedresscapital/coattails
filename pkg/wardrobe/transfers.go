@@ -2,8 +2,9 @@ package wardrobe
 
 import (
 	"fmt"
-	"github.com/shopspring/decimal"
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 type Transfer struct {

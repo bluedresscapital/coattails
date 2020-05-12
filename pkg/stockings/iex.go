@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/shopspring/decimal"
 	"net/http"
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 /*

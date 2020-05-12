@@ -1,10 +1,11 @@
 package poncho
 
 import (
+	"log"
+
 	"github.com/bluedresscapital/coattails/pkg/stockings"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"github.com/shopspring/decimal"
-	"log"
 )
 
 func ReloadPositions(portId int, stockAPI stockings.StockAPI) error {

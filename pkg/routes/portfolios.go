@@ -2,10 +2,11 @@ package routes
 
 import (
 	"fmt"
-	"github.com/bluedresscapital/coattails/pkg/wardrobe"
-	"github.com/gorilla/mux"
 	"log"
 	"net/http"
+
+	"github.com/bluedresscapital/coattails/pkg/wardrobe"
+	"github.com/gorilla/mux"
 )
 
 // All portfolio routes should be under /auth prefix

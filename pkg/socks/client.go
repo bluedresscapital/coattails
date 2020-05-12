@@ -2,11 +2,12 @@ package socks
 
 import (
 	"encoding/json"
+	"log"
+	"time"
+
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"github.com/go-redis/redis/v7"
 	"github.com/gorilla/websocket"
-	"log"
-	"time"
 )
 
 const (

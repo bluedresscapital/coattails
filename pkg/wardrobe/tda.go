@@ -3,6 +3,7 @@ package wardrobe
 import (
 	"database/sql"
 	"fmt"
+
 	"github.com/bluedresscapital/coattails/pkg/sundress"
 )
 

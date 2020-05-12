@@ -2,10 +2,11 @@ package main
 
 import (
 	"encoding/hex"
+	"log"
+
 	"github.com/bluedresscapital/coattails/pkg/sundress"
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
-	"log"
 )
 
 func main() {
