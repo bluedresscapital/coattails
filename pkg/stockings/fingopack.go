@@ -15,6 +15,8 @@ import (
 type FingoPack struct {
 }
 
+var _ StockAPI = (*FingoPack)(nil)
+
 type piqHistoricalStocks []finance.ChartBar
 
 func (piq FingoPack) GetCurrentPrice(ticker string) (*Stock, error) {

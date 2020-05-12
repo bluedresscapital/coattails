@@ -122,8 +122,7 @@ func reloadOrderHandler(userId *int, port *wardrobe.Portfolio, w http.ResponseWr
 			return
 		}
 		order := tda.API{AccountId: port.TDAccountId}
-		stock := stockings.IexApi{}
-		needsUpdate, err := poncho.ReloadOrders(order, stock)
+		needsUpdate, err := poncho.ReloadOrders(order, stockings.FingoPack{})
 		if needsUpdate {
 			err = diapers.ReloadDepsAndPublish(diapers.Order, port.Id, *userId, GetChannelFromUserId(*userId))
 			if err != nil {

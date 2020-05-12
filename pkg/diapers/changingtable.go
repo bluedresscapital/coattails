@@ -45,7 +45,7 @@ func ReloadDepsAndPublish(data Data, portId int, userId int, channel string) err
 }
 
 func reloadPositionsAndPublish(portId int, userId int, channel string) error {
-	err := poncho.ReloadPositions(portId, stockings.IexApi{})
+	err := poncho.ReloadPositions(portId, stockings.FingoPack{})
 	if err != nil {
 		log.Printf("Error reloading positions: %v", err)
 		return err
