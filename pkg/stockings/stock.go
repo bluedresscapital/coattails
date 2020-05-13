@@ -3,6 +3,8 @@ package stockings
 import (
 	"time"
 
+	"github.com/bluedresscapital/coattails/pkg/wardrobe"
+
 	"github.com/shopspring/decimal"
 )
 
@@ -34,7 +36,7 @@ type HistoricalStock struct {
 
 type HistoricalStocks []HistoricalStock
 
-func GetHistoricalPrice(stock StockAPI, ticker string, date time.Time) (*decimal.Decimal, error) {
+func GetHistoricalPrice(api StockAPI, ticker string, date time.Time) (*decimal.Decimal, error) {
 	// TODO (ralles)
 	// 1. First, check if that price is in our DB
 
@@ -48,7 +50,74 @@ func GetHistoricalPrice(stock StockAPI, ticker string, date time.Time) (*decimal
 	return &decimal.Zero, nil
 }
 
-func GetCurrentPrice(stock StockAPI) (*decimal.Decimal, error) {
+func GetCurrentPrice(api StockAPI) (*decimal.Decimal, error) {
 	// TODO (ralles)
 	return &decimal.Zero, nil
+}
+
+// GetHistoricalRange will return prices for *EVERY DAY* from start to end
+func GetHistoricalRange(api StockAPI, ticker string, start time.Time, end time.Time) (*HistoricalStocks, error) {
+	res := new(HistoricalStocks)
+	missingQuote := false
+	for currDate := start; currDate.Before(end.AddDate(0, 0, 1)); currDate = currDate.AddDate(0, 0, 1) {
+		sq, found, err := wardrobe.FetchStockQuote(ticker, currDate)
+		if err != nil || !found {
+			missingQuote = true
+			break
+		}
+		if sq.IsValidDate {
+			*res = append(*res, HistoricalStock{
+				Date:  sq.Date,
+				Price: sq.Price,
+			})
+		}
+	}
+	if !missingQuote {
+		return res, nil
+	}
+
+	stocksP, err := api.GetHistoricalRange(ticker, start, end)
+	if err != nil {
+		return nil, err
+	}
+	stocks := *stocksP
+	stockMap := make(map[time.Time]decimal.Decimal)
+	for _, stock := range stocks {
+		stockMap[stock.Date] = stock.Price
+	}
+
+	var currPrice decimal.Decimal
+	if len(stocks) == 0 || stocks[0].Date.After(start) {
+		historicalPrice, err := api.GetHistoricalPrice(ticker, start)
+		if err != nil {
+			return nil, err
+		}
+		currPrice = historicalPrice.Price
+	} else {
+		currPrice = stocks[0].Price
+	}
+
+	// In case the underlying stock is missing, just upsert it :)
+	err = wardrobe.UpsertStock(ticker)
+	if err != nil {
+		return nil, err
+	}
+
+	for currDate := start; currDate.Before(end.AddDate(0, 0, 1)); currDate = currDate.AddDate(0, 0, 1) {
+		price, found := stockMap[currDate]
+		if found {
+			currPrice = price
+		}
+		err = wardrobe.UpsertStockQuote(wardrobe.StockQuote{
+			Stock:       ticker,
+			Price:       currPrice,
+			Date:        currDate,
+			IsValidDate: found,
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return stocksP, nil
 }
