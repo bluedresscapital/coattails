@@ -71,7 +71,11 @@ func piqConvertToHistoricalRange(stocks *piqHistoricalStocks) *HistoricalStocks 
 	ret := new(HistoricalStocks)
 
 	for i := 0; i < len(*stocks); i++ {
-		*ret = append(*ret, HistoricalStock{time.Unix(int64((*stocks)[i].Timestamp), 0), (*stocks)[i].AdjClose})
+		date := time.Unix(int64((*stocks)[i].Timestamp), 0)
+		*ret = append(*ret, HistoricalStock{
+			Date:  time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC),
+			Price: (*stocks)[i].AdjClose,
+		})
 	}
 
 	return ret

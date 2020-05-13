@@ -41,4 +41,6 @@ func RegisterAllRoutes(r *mux.Router) {
 	r.HandleFunc("/financego", checkPiquette)
 	// Register all /auth routes
 	registerAuthRoutes(r)
+
+	registerStockRoutes(r)
 }
