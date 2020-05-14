@@ -14,7 +14,6 @@ type StockQuote struct {
 }
 
 func UpsertStockQuote(quote StockQuote) error {
-
 	_, err := db.Exec(`
 		INSERT INTO stock_quotes (stock_id, price, date, is_valid_date)
 			SELECT stocks.id, $2, $3, $4
@@ -35,6 +34,7 @@ func FetchStockQuote(ticker string, date time.Time) (*StockQuote, bool, error) {
 	if err != nil {
 		return nil, false, err
 	}
+	defer rows.Close()
 	if !rows.Next() {
 		return nil, false, nil
 	}

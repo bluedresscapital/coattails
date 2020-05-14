@@ -123,6 +123,11 @@ func reloadOrderHandler(userId *int, port *wardrobe.Portfolio, w http.ResponseWr
 		}
 		order := tda.API{AccountId: port.TDAccountId}
 		needsUpdate, err := poncho.ReloadOrders(order, stockings.FingoPack{})
+		if err != nil {
+			log.Printf("Encountered error while reloading orders: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 		if needsUpdate {
 			err = diapers.ReloadDepsAndPublish(diapers.Order, port.Id, *userId, GetChannelFromUserId(*userId))
 			if err != nil {

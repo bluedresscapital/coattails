@@ -62,14 +62,18 @@ func ReloadPositions(portId int, stockAPI stockings.StockAPI) error {
 	}
 	// Upsert stock positions
 	for stock, quantity := range port {
-		price, err := stockings.GetCurrentPrice(stockAPI)
+		var price decimal.Decimal
+		priceP, err := stockings.GetCurrentPrice(stockAPI, stock)
 		if err != nil {
-			return err
+			log.Printf("Errored in finding current price for %s: %v", stock, err)
+			price = decimal.Zero
+		} else {
+			price = *priceP
 		}
 		p := wardrobe.Position{
 			PortId:   portId,
 			Quantity: quantity,
-			Value:    quantity.Mul(*price),
+			Value:    quantity.Mul(price),
 			Stock:    stock,
 		}
 		err = wardrobe.InsertPosition(p)

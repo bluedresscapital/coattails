@@ -1,6 +1,7 @@
 package wardrobe
 
 import (
+	"context"
 	"database/sql"
 	"log"
 
@@ -8,6 +9,8 @@ import (
 )
 
 var db *sql.DB
+var ctx context.Context
+var conn *sql.Conn
 
 func InitDB(psqlInfo string) {
 	var err error
@@ -15,7 +18,7 @@ func InitDB(psqlInfo string) {
 	if err != nil {
 		log.Panic(err)
 	}
-
+	db.SetMaxOpenConns(50)
 	if err = db.Ping(); err != nil {
 		log.Panic(err)
 	}

@@ -1,6 +1,7 @@
 package stockings
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
@@ -37,22 +38,20 @@ type HistoricalStock struct {
 type HistoricalStocks []HistoricalStock
 
 func GetHistoricalPrice(api StockAPI, ticker string, date time.Time) (*decimal.Decimal, error) {
-	// TODO (ralles)
-	// 1. First, check if that price is in our DB
-
-	// 2. If not, return api call:
-	//price, err := stock.GetHistoricalPrice(ticker, date)
-	//if err != nil {
-	//	return nil, err
-	//}
-	// 3. Now we should store it in our db so we don't have to make the same api call again
-	//return &price.Price, nil
-	return &decimal.Zero, nil
+	hist, err := GetHistoricalRange(api, ticker, date.AddDate(0, 0, -5), date)
+	if err != nil {
+		return nil, err
+	}
+	if len(*hist) == 0 {
+		return nil, fmt.Errorf("empty history for stock %s and date %v", ticker, date)
+	}
+	price := (*hist)[len(*hist)-1].Price
+	return &price, nil
 }
 
-func GetCurrentPrice(api StockAPI) (*decimal.Decimal, error) {
-	// TODO (ralles)
-	return &decimal.Zero, nil
+func GetCurrentPrice(api StockAPI, ticker string) (*decimal.Decimal, error) {
+	y, m, d := time.Now().Date()
+	return GetHistoricalPrice(api, ticker, time.Date(y, m, d, 0, 0, 0, 0, time.UTC))
 }
 
 // GetHistoricalRange will return prices for *EVERY DAY* from start to end
@@ -75,7 +74,6 @@ func GetHistoricalRange(api StockAPI, ticker string, start time.Time, end time.T
 	if !missingQuote {
 		return res, nil
 	}
-
 	stocksP, err := api.GetHistoricalRange(ticker, start, end)
 	if err != nil {
 		return nil, err
@@ -96,13 +94,11 @@ func GetHistoricalRange(api StockAPI, ticker string, start time.Time, end time.T
 	} else {
 		currPrice = stocks[0].Price
 	}
-
 	// In case the underlying stock is missing, just upsert it :)
 	err = wardrobe.UpsertStock(ticker)
 	if err != nil {
 		return nil, err
 	}
-
 	for currDate := start; currDate.Before(end.AddDate(0, 0, 1)); currDate = currDate.AddDate(0, 0, 1) {
 		price, found := stockMap[currDate]
 		if found {
@@ -118,6 +114,5 @@ func GetHistoricalRange(api StockAPI, ticker string, start time.Time, end time.T
 			return nil, err
 		}
 	}
-
 	return stocksP, nil
 }

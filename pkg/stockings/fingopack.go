@@ -1,7 +1,7 @@
 package stockings
 
 import (
-	"errors"
+	"fmt"
 	"time"
 
 	"github.com/piquette/finance-go"
@@ -38,20 +38,15 @@ func (piq FingoPack) GetCurrentPrice(ticker string) (*Stock, error) {
 
 // we use the GetHistoricalRange function and set our start date to 5 days prior becuase there has to be a valid open market date in the range
 func (piq FingoPack) GetHistoricalPrice(ticker string, date time.Time) (*HistoricalStock, error) {
-
 	historicalQuotes, err := piq.GetHistoricalRange(ticker, date.AddDate(0, 0, -5), date)
-
 	if err != nil {
 		return nil, err
 	}
-
-	if len(*historicalQuotes) < 0 {
-		return nil, errors.New("Invalid Date")
+	if len(*historicalQuotes) == 0 {
+		return nil, fmt.Errorf("couldn't find a valid price for date %s", date)
 	}
-
 	// only interested in the last item which is the price at the date the user requested
 	return &(*historicalQuotes)[len(*historicalQuotes)-1], nil
-
 }
 
 func (piq FingoPack) GetHistoricalRange(ticker string, start time.Time, end time.Time) (*HistoricalStocks, error) {
