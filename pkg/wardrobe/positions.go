@@ -22,6 +22,7 @@ func FetchPositions(userId int) ([]Position, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	var positions []Position
 	for rows.Next() {
 		var p Position
@@ -46,6 +47,7 @@ func FetchPortfolioPositions(portId int) ([]Position, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	var positions []Position
 	for rows.Next() {
 		var p Position

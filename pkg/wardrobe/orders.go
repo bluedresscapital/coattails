@@ -62,6 +62,7 @@ func FetchOrdersByPortfolioId(portId int) ([]Order, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	var orders []Order
 	for rows.Next() {
 		var o Order

@@ -11,10 +11,11 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type PortValue struct {
-	Cash       decimal.Decimal
-	StockValue decimal.Decimal
-}
+const (
+	CASH                = "_CASH"
+	NORMALIZED_CASH     = "_NORMALIZED_CASH"
+	DAILY_NET_DEPOSITED = "_DAILY_NET_DEPOSITED"
+)
 
 func ReloadHistory(portfolio wardrobe.Portfolio) error {
 	orders, err := wardrobe.FetchOrdersByPortfolioId(portfolio.Id)
@@ -31,21 +32,66 @@ func ReloadHistory(portfolio wardrobe.Portfolio) error {
 	dates := util.GetMarketDates(start, time.Now())
 	// Computes portfolio (mapping of stock to quantity) snapshot per day
 	portSnapshots := getPortfolioSnapshots(orders, transfers, dates)
-	// Computes portfolio values (cash and stock_values) per day
-	portValues := computePortValues(dates, portSnapshots)
-	for _, date := range dates {
-		portValue := portValues[date]
-		log.Printf("[%s] total: %s, cash: %s, stock_value: %s", date, portValue.StockValue.Add(portValue.Cash), portValue.Cash, portValue.StockValue)
+	// Computes portfolio values (cash, stock_values, daily_net_deposited) per day
+	portValues := computePortValues(dates, portSnapshots, portfolio.Id)
+	for _, pv := range portValues {
+		err = wardrobe.UpsertPortfolioValue(pv)
+		if err != nil {
+			return err
+		}
 	}
+
 	return nil
 }
 
-func computePortValues(dates []time.Time, snapshots portSnapshots) map[time.Time]PortValue {
-	portValues := make(map[time.Time]PortValue)
+type PortPerformance struct {
+	Date          time.Time       `json:"date"`
+	DailyChange   decimal.Decimal `json:"daily_change"`
+	CumChange     decimal.Decimal `json:"cum_change"`
+	PortTotal     decimal.Decimal `json:"port_total"`
+	NormPortTotal decimal.Decimal `json:"norm_port_total"`
+}
+
+func ComputePortfolioPerformance(pvs []wardrobe.PortValue) []PortPerformance {
+	portPerfs := make([]PortPerformance, len(pvs))
+	cumPerf := decimal.New(1, 0)
+	for i, pv := range pvs {
+		if i == 0 {
+			portPerfs[i] = PortPerformance{
+				Date:          pv.Date,
+				DailyChange:   decimal.NewFromInt(1),
+				CumChange:     decimal.NewFromInt(1),
+				PortTotal:     pv.StockValue.Add(pv.Cash),
+				NormPortTotal: pv.StockValue.Add(pv.NormalizedCash),
+			}
+		} else {
+			prevPv := pvs[i-1]
+			currVal := pv.Cash.Add(pv.StockValue).Sub(pv.DailyNetDeposited)
+			prevVal := prevPv.Cash.Add(prevPv.StockValue)
+			perf := currVal.Div(prevVal)
+			cumPerf = cumPerf.Mul(perf)
+			portPerfs[i] = PortPerformance{
+				Date:          pv.Date,
+				DailyChange:   perf.Truncate(4),
+				CumChange:     cumPerf.Truncate(4),
+				PortTotal:     pv.StockValue.Add(pv.Cash),
+				NormPortTotal: pv.StockValue.Add(pv.NormalizedCash),
+			}
+		}
+	}
+	return portPerfs
+}
+
+func computePortValues(dates []time.Time, snapshots portSnapshots, portId int) map[time.Time]wardrobe.PortValue {
+	portValues := make(map[time.Time]wardrobe.PortValue)
 	for date := range snapshots {
-		portValues[date] = PortValue{
-			Cash:       snapshots[date]["_CASH"],
-			StockValue: decimal.Zero,
+		portValues[date] = wardrobe.PortValue{
+			Date:              date,
+			PortId:            portId,
+			NormalizedCash:    snapshots[date][NORMALIZED_CASH],
+			DailyNetDeposited: snapshots[date][DAILY_NET_DEPOSITED],
+			Cash:              snapshots[date][CASH],
+			StockValue:        decimal.Zero,
 		}
 	}
 	// Get the date ranges in which the user owned the stock
@@ -105,9 +151,10 @@ func getPortfolioSnapshots(orders []wardrobe.Order, transfers []wardrobe.Transfe
 	orderBuckets := getOrderBuckets(orders)
 	portSnapshots := make(portSnapshots)
 	port := make(portSnapshot)
-	//port["_CASH"] = getTotalDeposited(transfers)
-	port["_CASH"] = decimal.Zero
+	port[NORMALIZED_CASH] = getTotalDeposited(transfers)
+	port[CASH] = decimal.Zero
 	for _, date := range dates {
+		port[DAILY_NET_DEPOSITED] = decimal.Zero
 		dayOrders, found := orderBuckets[date]
 		if found {
 			processDayOrders(port, dayOrders)
@@ -124,7 +171,8 @@ func getPortfolioSnapshots(orders []wardrobe.Order, transfers []wardrobe.Transfe
 
 func processDayOrders(currPort portSnapshot, dayOrders []wardrobe.Order) {
 	for _, o := range dayOrders {
-		cash, _ := currPort["_CASH"]
+		cash, _ := currPort[CASH]
+		normCash, _ := currPort[NORMALIZED_CASH]
 		quantity, found := currPort[o.Stock]
 		if !found {
 			quantity = decimal.Zero
@@ -132,11 +180,14 @@ func processDayOrders(currPort portSnapshot, dayOrders []wardrobe.Order) {
 		if o.IsBuy {
 			quantity = quantity.Add(o.Quantity)
 			cash = cash.Sub(o.Quantity.Mul(o.Value))
+			normCash = normCash.Sub(o.Quantity.Mul(o.Value))
 		} else {
 			quantity = quantity.Sub(o.Quantity)
 			cash = cash.Add(o.Quantity.Mul(o.Value))
+			normCash = normCash.Add(o.Quantity.Mul(o.Value))
 		}
-		currPort["_CASH"] = cash
+		currPort[CASH] = cash
+		currPort[NORMALIZED_CASH] = normCash
 		currPort[o.Stock] = quantity
 	}
 }
@@ -154,14 +205,18 @@ func getTotalDeposited(transfers []wardrobe.Transfer) decimal.Decimal {
 }
 
 func processDayTransfers(currPort portSnapshot, dayTransfers []wardrobe.Transfer) {
+	netDeposited := decimal.Zero
 	for _, t := range dayTransfers {
-		cash, _ := currPort["_CASH"]
+		cash, _ := currPort[CASH]
 		if t.IsDeposit {
 			cash = cash.Add(t.Amount)
+			netDeposited = netDeposited.Add(t.Amount)
 		} else {
-			cash = cash.Add(t.Amount)
+			cash = cash.Sub(t.Amount)
+			netDeposited = netDeposited.Sub(t.Amount)
 		}
-		currPort["_CASH"] = cash
+		currPort[CASH] = cash
+		currPort[DAILY_NET_DEPOSITED] = netDeposited
 	}
 }
 
@@ -173,7 +228,7 @@ func computeStockRanges(dates []time.Time, snapshots portSnapshots) map[string]d
 			log.Panicf("ERROR: Unable to find snapshot for (valid) date: %s. Snapshots: %v", date, snapshots)
 		}
 		for stock, quantity := range snapshot {
-			if quantity.IsZero() || stock == "_CASH" {
+			if quantity.IsZero() || stock == CASH || stock == DAILY_NET_DEPOSITED || stock == NORMALIZED_CASH {
 				continue
 			}
 			dr, found := stockRange[stock]
@@ -215,18 +270,6 @@ func getTransferBuckets(transfers []wardrobe.Transfer) map[time.Time][]wardrobe.
 		buckets[util.GetTimelessDate(t.Date)] = bucket
 	}
 	return buckets
-}
-
-func reloadStockRangePrices(sr map[string]dateRange) error {
-	stockApi := stockings.FingoPack{}
-	for s, dates := range sr {
-		_, err := stockings.GetHistoricalRange(stockApi, s, dates.start, dates.end)
-		if err != nil {
-			log.Printf("Error in getting historical range: %v", err)
-			return err
-		}
-	}
-	return nil
 }
 
 func getPortfolioStartDate(transfers []wardrobe.Transfer, orders []wardrobe.Order) (time.Time, error) {

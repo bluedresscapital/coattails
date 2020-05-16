@@ -67,6 +67,7 @@ func FetchTDAccount(id int) (*TDAccount, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	if !rows.Next() {
 		return nil, fmt.Errorf("no td account with id %d", id)
 	}

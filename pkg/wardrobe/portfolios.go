@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 type Portfolio struct {
@@ -102,4 +104,45 @@ func UpdatePortfolioOrderTransferUpdatedAt(portId int, orderUpdatedAt time.Time,
 	_, err := db.Exec(`UPDATE portfolios SET orders_updated_at=$1, transfers_updated_at=$2 WHERE id=$3`,
 		orderUpdatedAt, transferUpdatedAt, portId)
 	return err
+}
+
+type PortValue struct {
+	PortId            int
+	Date              time.Time
+	DailyNetDeposited decimal.Decimal
+	Cash              decimal.Decimal
+	StockValue        decimal.Decimal
+	NormalizedCash    decimal.Decimal
+}
+
+func UpsertPortfolioValue(pv PortValue) error {
+	_, err := db.Exec(`
+		INSERT INTO portfolio_values (port_id, cash, stock_value, daily_net_deposited, normalized_cash, date)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		ON CONFLICT (port_id, date) DO UPDATE
+		SET cash=$2, stock_value=$3, daily_net_deposited=$4, normalized_cash=$5`,
+		pv.PortId, pv.Cash, pv.StockValue, pv.DailyNetDeposited, pv.NormalizedCash, pv.Date)
+	return err
+}
+
+func FetchPortfolioValuesByPortId(portId int) ([]PortValue, error) {
+	rows, err := db.Query(`
+		SELECT port_id, cash, stock_value, daily_net_deposited, normalized_cash, date
+		FROM portfolio_values
+		WHERE port_id=$1
+		ORDER BY date`, portId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	pvs := make([]PortValue, 0)
+	for rows.Next() {
+		var pv PortValue
+		err = rows.Scan(&pv.PortId, &pv.Cash, &pv.StockValue, &pv.DailyNetDeposited, &pv.NormalizedCash, &pv.Date)
+		if err != nil {
+			return nil, err
+		}
+		pvs = append(pvs, pv)
+	}
+	return pvs, nil
 }

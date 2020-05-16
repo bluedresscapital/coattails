@@ -23,6 +23,7 @@ func FetchUser(username string, password [32]byte) (*int, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	if !rows.Next() {
 		return nil, fmt.Errorf("invalid credentials for username %s", username)
 	}
@@ -42,6 +43,7 @@ func FetchUserById(id int) (*string, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	if !rows.Next() {
 		return nil, fmt.Errorf("unable to find user with id %d", id)
 	}

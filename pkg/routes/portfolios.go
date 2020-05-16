@@ -17,7 +17,7 @@ func registerPortfolioRoutes(r *mux.Router) {
 	s := r.PathPrefix("/portfolio").Subrouter()
 	s.HandleFunc("", authMiddleware(fetchPortfoliosHandler)).Methods("GET")
 	s.HandleFunc("/create", authMiddleware(createPortfolioHandler)).Methods("POST")
-	s.HandleFunc("/history", portAuthMiddleware(fetchPortfolioHistoryHandler)).Methods("GET")
+	s.HandleFunc("/history", authMiddleware(fetchPortfolioHistoryHandler)).Methods("GET")
 	s.HandleFunc("/history/reload", portAuthMiddleware(reloadPortfolioHistoryHandler)).Methods("POST")
 }
 
@@ -64,14 +64,29 @@ func createPortfolioHandler(userId *int, w http.ResponseWriter, r *http.Request)
 	writeJsonResponse(w, portfolios)
 }
 
-func fetchPortfolioHistoryHandler(userId *int, portfolio *wardrobe.Portfolio, w http.ResponseWriter, r *http.Request) {
-
+func fetchPortfolioHistoryHandler(userId *int, w http.ResponseWriter, r *http.Request) {
+	ps, err := wardrobe.FetchPortfoliosByUserId(*userId)
+	if err != nil {
+		log.Printf("Error fetching portfolios: %v", err)
+	}
+	perfMap := make(map[int][]portfolios.PortPerformance)
+	for _, portfolio := range ps {
+		pvs, err := wardrobe.FetchPortfolioValuesByPortId(portfolio.Id)
+		if err != nil {
+			log.Printf("Error fetching portfolio values: %v", err)
+		}
+		perf := portfolios.ComputePortfolioPerformance(pvs)
+		perfMap[portfolio.Id] = perf
+	}
+	writeJsonResponse(w, perfMap)
 }
 
 func reloadPortfolioHistoryHandler(userId *int, portfolio *wardrobe.Portfolio, w http.ResponseWriter, r *http.Request) {
 	err := portfolios.ReloadHistory(*portfolio)
 	if err != nil {
+		log.Printf("Error reloading portfolio: %v", err)
 		return
 	}
-	log.Printf("Reloading portfolio history!")
+	log.Printf("Succesfully reloaded portfolio history!")
+	writeStatusResponseJson(w, "success")
 }

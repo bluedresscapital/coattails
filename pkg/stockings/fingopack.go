@@ -2,6 +2,7 @@ package stockings
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/bluedresscapital/coattails/pkg/util"
@@ -70,6 +71,7 @@ func getHistoricalStocks(ticker string, start time.Time, end time.Time) (*Histor
 	startRange := start.AddDate(0, 0, -5)
 	// We need to set the end to + 1 day because fingo does exclusive end date for range
 	endRange := end.AddDate(0, 0, 1)
+	log.Printf("Fingo fetching historical stocks for %s from [%s, %s)", ticker, startRange, endRange)
 	params := &chart.Params{
 		Symbol:   ticker,
 		Interval: datetime.OneDay,
