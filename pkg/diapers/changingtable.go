@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/bluedresscapital/coattails/pkg/poncho"
+	"github.com/bluedresscapital/coattails/pkg/positions"
 	"github.com/bluedresscapital/coattails/pkg/socks"
 	"github.com/bluedresscapital/coattails/pkg/stockings"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
@@ -45,14 +45,14 @@ func ReloadDepsAndPublish(data Data, portId int, userId int, channel string) err
 }
 
 func reloadPositionsAndPublish(portId int, userId int, channel string) error {
-	err := poncho.ReloadPositions(portId, stockings.FingoPack{})
+	err := positions.ReloadPositions(portId, stockings.FingoPack{})
 	if err != nil {
 		log.Printf("Error reloading positions: %v", err)
 		return err
 	}
-	positions, err := wardrobe.FetchPositions(userId)
+	p, err := wardrobe.FetchPositions(userId)
 	if err != nil {
 		return err
 	}
-	return socks.PublishFromServer(channel, "LOADED_POSITIONS", positions)
+	return socks.PublishFromServer(channel, "LOADED_POSITIONS", p)
 }

@@ -1,4 +1,4 @@
-package poncho
+package orders
 
 import (
 	"log"
@@ -22,14 +22,11 @@ func ReloadOrders(order OrderAPI, stock stockings.StockAPI) (bool, error) {
 	}
 	var portId int
 	for i, o := range orders {
-		log.Printf("Parsing order %s %s", o.Stock, o.Date)
 		portId = o.PortId
 		if o.Value.IsZero() {
-			log.Printf("order's %s value at %s is zero, so checking stockings price...", o.Stock, o.Date)
 			price, err := stockings.GetHistoricalPrice(stock, o.Stock, o.Date)
-			log.Printf("???")
 			if err != nil {
-				log.Printf("Unable to get price for stock %s at date %s", o.Stock, o.Date)
+				log.Printf("Unable to get price for stock %s at date %s, setting it to 0", o.Stock, o.Date)
 				orders[i].Value = decimal.Zero
 			} else {
 				orders[i].Value = *price

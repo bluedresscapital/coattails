@@ -1,4 +1,4 @@
-package poncho
+package transfers
 
 import (
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"

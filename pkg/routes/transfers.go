@@ -5,8 +5,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/bluedresscapital/coattails/pkg/transfers"
+
 	"github.com/bluedresscapital/coattails/pkg/diapers"
-	"github.com/bluedresscapital/coattails/pkg/poncho"
 	"github.com/bluedresscapital/coattails/pkg/socks"
 	"github.com/bluedresscapital/coattails/pkg/tda"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
@@ -114,7 +115,7 @@ func reloadTransferHandler(userId *int, port *wardrobe.Portfolio, w http.Respons
 			return
 		}
 		transfer := tda.API{AccountId: port.TDAccountId}
-		needsUpdate, err := poncho.ReloadTransfers(transfer)
+		needsUpdate, err := transfers.ReloadTransfers(transfer)
 		if needsUpdate {
 			err = diapers.ReloadDepsAndPublish(diapers.Transfer, port.Id, *userId, GetChannelFromUserId(*userId))
 			if err != nil {

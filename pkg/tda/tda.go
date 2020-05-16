@@ -4,7 +4,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/bluedresscapital/coattails/pkg/poncho"
+	"github.com/bluedresscapital/coattails/pkg/orders"
+	"github.com/bluedresscapital/coattails/pkg/transfers"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"github.com/shopspring/decimal"
 )
@@ -13,8 +14,8 @@ type API struct {
 	AccountId int
 }
 
-var _ poncho.OrderAPI = (*API)(nil)
-var _ poncho.TransferAPI = (*API)(nil)
+var _ orders.OrderAPI = (*API)(nil)
+var _ transfers.TransferAPI = (*API)(nil)
 
 func (api API) GetOrders() ([]wardrobe.Order, error) {
 	accessTok, tdAccount, err := api.getAccessToken()

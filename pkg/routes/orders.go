@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/bluedresscapital/coattails/pkg/diapers"
-	"github.com/bluedresscapital/coattails/pkg/poncho"
+	"github.com/bluedresscapital/coattails/pkg/orders"
 	"github.com/bluedresscapital/coattails/pkg/socks"
 	"github.com/bluedresscapital/coattails/pkg/stockings"
 	"github.com/bluedresscapital/coattails/pkg/tda"
@@ -122,7 +122,7 @@ func reloadOrderHandler(userId *int, port *wardrobe.Portfolio, w http.ResponseWr
 			return
 		}
 		order := tda.API{AccountId: port.TDAccountId}
-		needsUpdate, err := poncho.ReloadOrders(order, stockings.FingoPack{})
+		needsUpdate, err := orders.ReloadOrders(order, stockings.FingoPack{})
 		if err != nil {
 			log.Printf("Encountered error while reloading orders: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
