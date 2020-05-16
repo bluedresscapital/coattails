@@ -4,18 +4,18 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/bluedresscapital/coattails/pkg/sundress"
+	"github.com/bluedresscapital/coattails/pkg/secrets"
 )
 
 // Creates a TD Portfolio - this will insert a tda_accounts object, as well as
 // insert a portfolio object
 func CreateTDPortfolio(userId int, name string, accountNum string, refreshToken string) error {
-	refreshCipher, err := sundress.BdcEncrypt(refreshToken)
+	refreshCipher, err := secrets.BdcEncrypt(refreshToken)
 	if err != nil {
 		return err
 	}
-	accountNumHash := sundress.Hash(accountNum)
-	accountNumCipher, err := sundress.BdcEncrypt(accountNum)
+	accountNumHash := secrets.Hash(accountNum)
+	accountNumCipher, err := secrets.BdcEncrypt(accountNum)
 	if err != nil {
 		return err
 	}
@@ -44,7 +44,7 @@ func CreateTDPortfolio(userId int, name string, accountNum string, refreshToken 
 
 // Updates tda account
 func UpdateRefreshToken(accountId int, refreshToken string) error {
-	refreshCipher, err := sundress.BdcEncrypt(refreshToken)
+	refreshCipher, err := secrets.BdcEncrypt(refreshToken)
 	if err != nil {
 		return err
 	}
@@ -107,11 +107,11 @@ func fetchTDAccountFromRows(rows *sql.Rows) (*TDAccount, error) {
 	if err != nil {
 		return nil, err
 	}
-	refreshToken, err := sundress.BdcDecrypt(refreshTokenCipher)
+	refreshToken, err := secrets.BdcDecrypt(refreshTokenCipher)
 	if err != nil {
 		return nil, err
 	}
-	accountNum, err := sundress.BdcDecrypt(accountNumCipher)
+	accountNum, err := secrets.BdcDecrypt(accountNumCipher)
 	if err != nil {
 		return nil, err
 	}

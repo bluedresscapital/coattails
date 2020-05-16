@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/bluedresscapital/coattails/pkg/routes"
+	"github.com/bluedresscapital/coattails/pkg/secrets"
 	"github.com/bluedresscapital/coattails/pkg/stockings"
-	"github.com/bluedresscapital/coattails/pkg/sundress"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
@@ -88,9 +88,9 @@ func main() {
 		}
 	}()
 
-	// NOTE(ma): It's important to initialize sundress AFTER all startup routines are done. In case we run into
+	// NOTE(ma): It's important to initialize secrets AFTER all startup routines are done. In case we run into
 	// a crashloop, we don't want to make unnecessary requests to kms due to our monthly limit
-	sundress.InitSundress()
+	secrets.InitSundress()
 	c := make(chan os.Signal, 1)
 	// We'll accept graceful shutdowns when quit via SIGINT (Ctrl+C)
 	// SIGKILL, SIGQUIT or SIGTERM (Ctrl+/) will not be caught.

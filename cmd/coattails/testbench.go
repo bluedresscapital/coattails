@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/bluedresscapital/coattails/pkg/sundress"
+	"github.com/bluedresscapital/coattails/pkg/secrets"
 	"github.com/bluedresscapital/coattails/pkg/tda"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"github.com/joho/godotenv"
@@ -39,7 +39,7 @@ func main() {
 	flag.StringVar(&cacheHost, "redis-host", "localhost", "redis host")
 	flag.Parse()
 	// Initialize singleton instances after parsing flag
-	sundress.InitSundress()
+	secrets.InitSundress()
 	wardrobe.InitDB(fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		pgHost, pgPort, pgUser, pgPwd, pgDb))
 

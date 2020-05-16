@@ -1,4 +1,4 @@
-package sundress
+package secrets
 
 import (
 	"crypto/aes"

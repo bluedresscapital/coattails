@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/bluedresscapital/coattails/pkg/auth"
-	"github.com/bluedresscapital/coattails/pkg/sundress"
+	"github.com/bluedresscapital/coattails/pkg/secrets"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"github.com/gorilla/mux"
 )
@@ -89,7 +89,7 @@ func loginRegisterHelper(w http.ResponseWriter, r *http.Request, loginMode bool)
 		return
 	}
 	// Immediately encrypt password so we don't run it down later
-	cipherPwd := sundress.Hash(l.Password)
+	cipherPwd := secrets.Hash(l.Password)
 	tok := new(string)
 	if loginMode {
 		tok, err = auth.Login(l.Username, cipherPwd)

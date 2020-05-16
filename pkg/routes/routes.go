@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/bluedresscapital/coattails/pkg/sundress"
+	"github.com/bluedresscapital/coattails/pkg/secrets"
 	"github.com/gorilla/mux"
 )
 
@@ -13,16 +13,16 @@ func testHandler(w http.ResponseWriter, r *http.Request) {
 	plaintext := "1234"
 	log.Printf("plaintext: %s", plaintext)
 
-	cipher := sundress.Encrypt(plaintext)
+	cipher := secrets.Encrypt(plaintext)
 	log.Printf("first cipher: %s", cipher)
 
-	cipher2 := sundress.Encrypt(plaintext)
+	cipher2 := secrets.Encrypt(plaintext)
 	log.Printf("second cipher: %s", cipher2)
 
-	decryptedCipher := sundress.Decrypt(cipher)
+	decryptedCipher := secrets.Decrypt(cipher)
 	log.Printf("Decrypted cipher: %s", decryptedCipher)
 
-	decryptedCipher2 := sundress.Decrypt(cipher2)
+	decryptedCipher2 := secrets.Decrypt(cipher2)
 	log.Printf("Decrypted second cipher: %s", decryptedCipher2)
 
 	_, _ = fmt.Fprintf(w, "Welcome home!!!")
