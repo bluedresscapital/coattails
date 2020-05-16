@@ -5,6 +5,8 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/bluedresscapital/coattails/pkg/portfolios"
+
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"github.com/gorilla/mux"
 )
@@ -15,6 +17,8 @@ func registerPortfolioRoutes(r *mux.Router) {
 	s := r.PathPrefix("/portfolio").Subrouter()
 	s.HandleFunc("", authMiddleware(fetchPortfoliosHandler)).Methods("GET")
 	s.HandleFunc("/create", authMiddleware(createPortfolioHandler)).Methods("POST")
+	s.HandleFunc("/history", portAuthMiddleware(fetchPortfolioHistoryHandler)).Methods("GET")
+	s.HandleFunc("/history/reload", portAuthMiddleware(reloadPortfolioHistoryHandler)).Methods("POST")
 }
 
 type CreatePortfolioRequest struct {
@@ -58,4 +62,16 @@ func createPortfolioHandler(userId *int, w http.ResponseWriter, r *http.Request)
 		return
 	}
 	writeJsonResponse(w, portfolios)
+}
+
+func fetchPortfolioHistoryHandler(userId *int, portfolio *wardrobe.Portfolio, w http.ResponseWriter, r *http.Request) {
+
+}
+
+func reloadPortfolioHistoryHandler(userId *int, portfolio *wardrobe.Portfolio, w http.ResponseWriter, r *http.Request) {
+	err := portfolios.ReloadHistory(*portfolio)
+	if err != nil {
+		return
+	}
+	log.Printf("Reloading portfolio history!")
 }

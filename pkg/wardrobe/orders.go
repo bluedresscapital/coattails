@@ -30,10 +30,12 @@ func FetchOrdersByUserId(userId int) ([]Order, error) {
 		FROM orders o
 		JOIN portfolios p ON p.id=o.port_id
 		JOIN stocks s ON s.id=o.stock_id
-		WHERE p.user_id=$1`, userId)
+		WHERE p.user_id=$1
+		ORDER BY o.date`, userId)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	var orders []Order
 	for rows.Next() {
 		var o Order
@@ -55,7 +57,8 @@ func FetchOrdersByPortfolioId(portId int) ([]Order, error) {
 		SELECT o.uid, o.port_id, s.ticker, o.quantity, o.value, o.is_buy, o.manually_added, o.date
 		FROM orders o
 		JOIN stocks s ON s.id=o.stock_id
-		WHERE o.port_id=$1`, portId)
+		WHERE o.port_id=$1
+		ORDER BY o.date`, portId)
 	if err != nil {
 		return nil, err
 	}
@@ -116,6 +119,7 @@ func GetMaxOrderUpdatedAt(portId int) (*time.Time, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	if !rows.Next() {
 		return nil, fmt.Errorf("no rows found for orders with port_id %d", portId)
 	}

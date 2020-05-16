@@ -8,7 +8,9 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-func ReloadPositions(portId int, stockAPI stockings.StockAPI) error {
+// Reloads positions for portId
+// Will also update the portfolio's "positions" and "orders" updated at field
+func ReloadAndSetPortfolioUpdatedAt(portId int, stockAPI stockings.StockAPI) error {
 	log.Printf("Reloading positions for port %d", portId)
 	orders, err := wardrobe.FetchOrdersByPortfolioId(portId)
 	if err != nil {
@@ -62,18 +64,22 @@ func ReloadPositions(portId int, stockAPI stockings.StockAPI) error {
 	}
 	// Upsert stock positions
 	for stock, quantity := range port {
-		var price decimal.Decimal
-		priceP, err := stockings.GetCurrentPrice(stockAPI, stock)
-		if err != nil {
-			log.Printf("Errored in finding current price for %s: %v", stock, err)
-			price = decimal.Zero
-		} else {
-			price = *priceP
+		value := decimal.Zero
+		if !quantity.IsZero() {
+			var price decimal.Decimal
+			priceP, err := stockings.GetCurrentPrice(stockAPI, stock)
+			if err != nil {
+				log.Printf("Errored in finding current price for %s: %v", stock, err)
+				price = decimal.Zero
+			} else {
+				price = *priceP
+			}
+			value = quantity.Mul(price)
 		}
 		p := wardrobe.Position{
 			PortId:   portId,
 			Quantity: quantity,
-			Value:    quantity.Mul(price),
+			Value:    value,
 			Stock:    stock,
 		}
 		err = wardrobe.InsertPosition(p)

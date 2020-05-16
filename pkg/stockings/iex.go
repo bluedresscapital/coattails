@@ -40,9 +40,8 @@ const (
 	iexCurrentPriceUrl        = "https://cloud.iexapis.com/stable/stock/%s/quote?token=%s"
 	iexHistoricalDateRangeUrl = "https://cloud.iexapis.com/stable/stock/%s/chart/%s?token=%s"
 	iexHistoricalDateUrl      = "https://cloud.iexapis.com/stable/stock/%s/chart/date/%s?chartByDay=true&token=%s"
-	//https://cloud.iexapis.com/stable/stock/MELI/chart/date/20200102?chartByDay=true&token=pk_ec21611ca5f5492e9397b4a1879ff114
-	iexDateLayout = "2006-01-02"
-	DateLayout    = "20060102"
+	iexDateLayout             = "2006-01-02"
+	DateLayout                = "20060102"
 )
 
 //example for ralles, he should refactor this to better handle error checking etc
@@ -74,7 +73,6 @@ func (iex IexApi) GetHistoricalPrice(ticker string, date time.Time) (*Historical
 	if err != nil {
 		return nil, err
 	}
-
 	if resp.StatusCode != 200 {
 		return nil, errors.New("http resp not 200")
 	}
@@ -99,14 +97,11 @@ func (iex IexApi) GetHistoricalRange(ticker string, start time.Time, end time.Ti
 	if err != nil {
 		return nil, err
 	}
-
 	url := fmt.Sprintf(iexHistoricalDateRangeUrl, ticker, *rangeQuery, getKey())
-	println(url)
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
 	}
-
 	if resp.StatusCode != 200 {
 		return nil, errors.New("http resp not 200")
 	}
@@ -115,23 +110,18 @@ func (iex IexApi) GetHistoricalRange(ticker string, start time.Time, end time.Ti
 	if err != nil {
 		return nil, err
 	}
-
 	startIndex, err := startOfHistoricalRange(historical, parsedStart)
 	if err != nil {
 		return nil, err
 	}
-
 	endIndex, err := endOfHistoricalRange(historical, parsedEnd)
 	if err != nil {
 		return nil, err
 	}
-
 	if *startIndex > *endIndex {
-		return nil, errors.New("Invalid range")
+		return nil, fmt.Errorf("invalid date index range: %d -> %d", *startIndex, *endIndex)
 	}
-
 	*historical = (*historical)[*startIndex:*endIndex]
-
 	return convertToHistoricalRange(historical), nil
 }
 

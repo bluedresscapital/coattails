@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/bluedresscapital/coattails/pkg/util"
+
 	"github.com/piquette/finance-go"
 	"github.com/piquette/finance-go/chart"
 	"github.com/piquette/finance-go/datetime"
@@ -36,9 +38,9 @@ func (piq FingoPack) GetCurrentPrice(ticker string) (*Stock, error) {
 
 }
 
-// we use the GetHistoricalRange function and set our start date to 5 days prior becuase there has to be a valid open market date in the range
 func (piq FingoPack) GetHistoricalPrice(ticker string, date time.Time) (*HistoricalStock, error) {
-	historicalQuotes, err := piq.GetHistoricalRange(ticker, date.AddDate(0, 0, -5), date)
+	// Assume GetHistoricalRange (ticker, start, end) will return prices from [start, end] (inclusive)
+	historicalQuotes, err := piq.GetHistoricalRange(ticker, date, date)
 	if err != nil {
 		return nil, err
 	}
@@ -50,57 +52,58 @@ func (piq FingoPack) GetHistoricalPrice(ticker string, date time.Time) (*Histori
 }
 
 func (piq FingoPack) GetHistoricalRange(ticker string, start time.Time, end time.Time) (*HistoricalStocks, error) {
-
-	// adding a day to our end date so that our range includes the price on that date
-	barChart, err := getBarChartIter(ticker, start, end.AddDate(0, 0, 1))
+	if end.Before(start) {
+		return nil, fmt.Errorf("invalid date range. start (%s) is after end (%s)", start, end)
+	}
+	historicalStocks, err := getHistoricalStocks(ticker, start, end)
 	if err != nil {
 		return nil, err
 	}
-
-	return barChart, nil
+	return historicalStocks, nil
 }
 
-// piqConvertToHistoricalRange converts to accepted interface struct
-func piqConvertToHistoricalRange(stocks *piqHistoricalStocks) *HistoricalStocks {
-
-	ret := new(HistoricalStocks)
-
-	for i := 0; i < len(*stocks); i++ {
-		date := time.Unix(int64((*stocks)[i].Timestamp), 0)
-		*ret = append(*ret, HistoricalStock{
-			Date:  time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC),
-			Price: (*stocks)[i].AdjClose,
-		})
-	}
-
-	return ret
-}
-
-func getBarChartIter(ticker string, start time.Time, end time.Time) (*HistoricalStocks, error) {
-
-	historicalRange := new(piqHistoricalStocks)
-	// converting the time.Time format to an accepted financego format
-	fingoStart := datetime.New(&start)
-	fingoEnd := datetime.New(&end)
-
+func getHistoricalStocks(ticker string, start time.Time, end time.Time) (*HistoricalStocks, error) {
+	start = util.GetTimelessDate(start)
+	end = util.GetTimelessDate(end)
+	// Just subtract 5 days (for now) to try and guarantee we can get some valid price for our date range
+	// For example, if start was on a weekend, we'd want to get the most recent valid price prior to start.
+	startRange := start.AddDate(0, 0, -5)
+	// We need to set the end to + 1 day because fingo does exclusive end date for range
+	endRange := end.AddDate(0, 0, 1)
 	params := &chart.Params{
 		Symbol:   ticker,
 		Interval: datetime.OneDay,
-		Start:    fingoStart,
-		End:      fingoEnd,
+		Start:    datetime.New(&startRange),
+		End:      datetime.New(&(endRange)),
 	}
-
 	iter := chart.Get(params)
-
+	if iter.Count() == 0 {
+		return nil, fmt.Errorf("fingo empty iter returned for %s from [%s to %s)", ticker, startRange, endRange)
+	}
+	historicalRange := new(piqHistoricalStocks)
 	for iter.Next() {
 		*historicalRange = append(*historicalRange, *iter.Bar())
 	}
-
 	err := iter.Err()
 	if err != nil {
 		return nil, err
 	}
-
 	// a little bit of blackboxing here, but this iter contains all the information we need
-	return piqConvertToHistoricalRange(historicalRange), nil
+	return piqConvertToHistoricalRange(historicalRange, start, end), nil
+}
+
+// piqConvertToHistoricalRange converts to accepted interface struct
+func piqConvertToHistoricalRange(stocks *piqHistoricalStocks, start time.Time, end time.Time) *HistoricalStocks {
+	ret := new(HistoricalStocks)
+	for i := 0; i < len(*stocks); i++ {
+		date := util.GetTimelessDate(time.Unix(int64((*stocks)[i].Timestamp), 0))
+		if date.Before(start) || date.After(end) {
+			continue
+		}
+		*ret = append(*ret, HistoricalStock{
+			Date:  date,
+			Price: (*stocks)[i].AdjClose,
+		})
+	}
+	return ret
 }

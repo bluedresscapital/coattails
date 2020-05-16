@@ -1,7 +1,10 @@
 package wardrobe
 
 import (
+	"fmt"
 	"time"
+
+	"github.com/bluedresscapital/coattails/pkg/util"
 
 	"github.com/shopspring/decimal"
 )
@@ -14,6 +17,9 @@ type StockQuote struct {
 }
 
 func UpsertStockQuote(quote StockQuote) error {
+	if quote.Price.IsZero() {
+		return fmt.Errorf("stock quote price cannot be zero")
+	}
 	_, err := db.Exec(`
 		INSERT INTO stock_quotes (stock_id, price, date, is_valid_date)
 			SELECT stocks.id, $2, $3, $4
@@ -21,7 +27,7 @@ func UpsertStockQuote(quote StockQuote) error {
 			WHERE ticker=$1
 		ON CONFLICT(stock_id, date) DO UPDATE
 		SET price=$2, is_valid_date=$4`,
-		quote.Stock, quote.Price, quote.Date, quote.IsValidDate)
+		quote.Stock, quote.Price, util.GetTimelessDate(quote.Date), quote.IsValidDate)
 	return err
 }
 

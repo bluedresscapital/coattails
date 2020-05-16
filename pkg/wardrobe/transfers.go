@@ -42,10 +42,12 @@ func FetchTransfersbyUserId(userId int) ([]Transfer, error) {
 		SELECT uid, port_id, amount, is_deposit, manually_added, date 
 		FROM transfers t
 		JOIN portfolios p ON t.port_id=p.id
-		WHERE p.user_id=$1`, userId)
+		WHERE p.user_id=$1
+		ORDER BY date`, userId)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	var transfers []Transfer
 	for rows.Next() {
 		var t Transfer
@@ -65,10 +67,12 @@ func FetchTransfersByPortfolioId(portId int) ([]Transfer, error) {
 	rows, err := db.Query(`
 		SELECT uid, port_id, amount, is_deposit, manually_added, date 
 		FROM transfers t
-		WHERE t.port_id=$1`, portId)
+		WHERE t.port_id=$1
+		ORDER BY date`, portId)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	var transfers []Transfer
 	for rows.Next() {
 		var t Transfer
@@ -94,6 +98,7 @@ func GetMaxTransferUpdatedAt(portId int) (*time.Time, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	if !rows.Next() {
 		return nil, fmt.Errorf("no rows found for transfers with port_id %d", portId)
 	}

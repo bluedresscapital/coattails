@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/bluedresscapital/coattails/pkg/util"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
-
 	"github.com/shopspring/decimal"
 )
 
@@ -38,6 +38,7 @@ type HistoricalStock struct {
 type HistoricalStocks []HistoricalStock
 
 func GetHistoricalPrice(api StockAPI, ticker string, date time.Time) (*decimal.Decimal, error) {
+	date = util.GetTimelessDate(date)
 	hist, err := GetHistoricalRange(api, ticker, date.AddDate(0, 0, -5), date)
 	if err != nil {
 		return nil, err
@@ -50,12 +51,13 @@ func GetHistoricalPrice(api StockAPI, ticker string, date time.Time) (*decimal.D
 }
 
 func GetCurrentPrice(api StockAPI, ticker string) (*decimal.Decimal, error) {
-	y, m, d := time.Now().Date()
-	return GetHistoricalPrice(api, ticker, time.Date(y, m, d, 0, 0, 0, 0, time.UTC))
+	return GetHistoricalPrice(api, ticker, util.GetTimelessDate(time.Now()))
 }
 
 // GetHistoricalRange will return prices for *EVERY DAY* from start to end
 func GetHistoricalRange(api StockAPI, ticker string, start time.Time, end time.Time) (*HistoricalStocks, error) {
+	start = util.GetTimelessDate(start)
+	end = util.GetTimelessDate(end)
 	res := new(HistoricalStocks)
 	missingQuote := false
 	for currDate := start; currDate.Before(end.AddDate(0, 0, 1)); currDate = currDate.AddDate(0, 0, 1) {
@@ -64,19 +66,19 @@ func GetHistoricalRange(api StockAPI, ticker string, start time.Time, end time.T
 			missingQuote = true
 			break
 		}
-		if sq.IsValidDate {
-			*res = append(*res, HistoricalStock{
-				Date:  sq.Date,
-				Price: sq.Price,
-			})
-		}
+		//if sq.IsValidDate {
+		*res = append(*res, HistoricalStock{
+			Date:  sq.Date,
+			Price: sq.Price,
+		})
+		//}
 	}
 	if !missingQuote {
 		return res, nil
 	}
 	stocksP, err := api.GetHistoricalRange(ticker, start, end)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("errored out from stock api's get historical range: %v", err)
 	}
 	stocks := *stocksP
 	stockMap := make(map[time.Time]decimal.Decimal)
@@ -88,7 +90,7 @@ func GetHistoricalRange(api StockAPI, ticker string, start time.Time, end time.T
 	if len(stocks) == 0 || stocks[0].Date.After(start) {
 		historicalPrice, err := api.GetHistoricalPrice(ticker, start)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("errored out from stock api's get historical price: %v", err)
 		}
 		currPrice = historicalPrice.Price
 	} else {

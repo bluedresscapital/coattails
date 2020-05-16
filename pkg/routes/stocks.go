@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/bluedresscapital/coattails/pkg/stockings"
-
 	"github.com/gorilla/mux"
 )
 
@@ -32,8 +31,12 @@ func stockQuoteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	prices, err := stockings.GetHistoricalRange(stockings.FingoPack{}, vars["ticker"], start, end)
 	if err != nil {
-		log.Printf("Error in getting historical range: %v", err)
-		return
+		log.Printf("Error in getting historical range with fingoPack: %v, falling back to iex!", err)
+		prices, err = stockings.GetHistoricalRange(stockings.IexApi{}, vars["ticker"], start, end)
+		if err != nil {
+			log.Printf("Error in getting historical range with iex: %v, failing request(", err)
+			return
+		}
 	}
 	writeJsonResponse(w, *prices)
 }
