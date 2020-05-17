@@ -23,15 +23,13 @@ func registerAuthRoutes(r *mux.Router) {
 	s.HandleFunc("/user", authMiddleware(userHandler)).Methods("POST")
 	s.HandleFunc("/websocket", authMiddleware(testWebSocket))
 
-	// Register all portfolio routes under /auth
+	// Register all of the following routes under /auth because they require
+	// user auth
 	registerPortfolioRoutes(s)
-	// Register all transfer routes under /auth
 	registerTransferRoutes(s)
-	// Register all order routes under /auth
 	registerOrderRoutes(s)
-	// Register all tda routes under /auth
 	registerTDARoutes(s)
-	// Register all position routes under /auth
+	registerRobinhoodRoutes(s)
 	registerPositionRoutes(s)
 }
 

@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/bluedresscapital/coattails/pkg/robinhood"
+
 	"github.com/bluedresscapital/coattails/pkg/transfers"
 
 	"github.com/bluedresscapital/coattails/pkg/diapers"
@@ -108,13 +110,23 @@ func deleteTransferHandler(userId *int, port *wardrobe.Portfolio, w http.Respons
 }
 
 func reloadTransferHandler(userId *int, port *wardrobe.Portfolio, w http.ResponseWriter, r *http.Request) {
+	var transfer transfers.TransferAPI
 	if port.Type == "tda" {
 		err := validateTdaUsage(*port, *userId)
 		if err != nil {
-			log.Printf("Unable to validate td account usage: %v", err)
+			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-		transfer := tda.API{AccountId: port.TDAccountId}
+		transfer = tda.API{AccountId: port.TDAccountId}
+	} else if port.Type == "rh" {
+		err := validateRhUsage(*port, *userId)
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		transfer = robinhood.API{AccountId: port.RHAccountId}
+	}
+	if transfer != nil {
 		needsUpdate, err := transfers.ReloadTransfers(transfer)
 		if needsUpdate {
 			err = diapers.ReloadDepsAndPublish(diapers.Transfer, port.Id, *userId, GetChannelFromUserId(*userId))

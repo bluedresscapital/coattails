@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/bluedresscapital/coattails/pkg/robinhood"
+
 	"github.com/bluedresscapital/coattails/pkg/diapers"
 	"github.com/bluedresscapital/coattails/pkg/orders"
 	"github.com/bluedresscapital/coattails/pkg/socks"
@@ -114,6 +116,7 @@ func deleteOrderHandler(userId *int, port *wardrobe.Portfolio, w http.ResponseWr
 }
 
 func reloadOrderHandler(userId *int, port *wardrobe.Portfolio, w http.ResponseWriter, r *http.Request) {
+	var order orders.OrderAPI
 	if port.Type == "tda" {
 		log.Print("Reloading tda orders...")
 		err := validateTdaUsage(*port, *userId)
@@ -121,7 +124,17 @@ func reloadOrderHandler(userId *int, port *wardrobe.Portfolio, w http.ResponseWr
 			log.Printf("Unable to validate td account usage: %v", err)
 			return
 		}
-		order := tda.API{AccountId: port.TDAccountId}
+		order = tda.API{AccountId: port.TDAccountId}
+	} else if port.Type == "rh" {
+		log.Print("Reloading rh orders...")
+		err := validateRhUsage(*port, *userId)
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		order = robinhood.API{AccountId: port.RHAccountId}
+	}
+	if order != nil {
 		needsUpdate, err := orders.ReloadOrders(order, stockings.FingoPack{})
 		if err != nil {
 			log.Printf("Encountered error while reloading orders: %v", err)

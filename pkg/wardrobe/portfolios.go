@@ -14,6 +14,7 @@ type Portfolio struct {
 	Type               string    `json:"type"`
 	UserId             int       `json:"user_id"`
 	TDAccountId        int       `json:"tda_account_id"`
+	RHAccountId        int       `json:"rh_account_id"`
 	OrdersUpdatedAt    time.Time `json:"orders_updated_at"`
 	TransfersUpdatedAt time.Time `json:"transfers_updated_at"`
 }
@@ -25,24 +26,29 @@ func CreatePortfolio(userId int, name string, portType string) error {
 
 func FetchPortfolioById(id int) (*Portfolio, error) {
 	rows, err := db.Query(`
-		SELECT id, name, type, user_id, tda_account_id, orders_updated_at, transfers_updated_at 
+		SELECT id, name, type, user_id, tda_account_id, rh_account_id, orders_updated_at, transfers_updated_at 
 		FROM portfolios WHERE id=$1`, id)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	if !rows.Next() {
 		return nil, fmt.Errorf("no portfolio with id %d found", id)
 	}
 	var port Portfolio
 	var tdAccountId sql.NullInt64
+	var rhAccountId sql.NullInt64
 	var ordersUpdatedAt sql.NullTime
 	var transfersUpdatedAt sql.NullTime
-	err = rows.Scan(&port.Id, &port.Name, &port.Type, &port.UserId, &tdAccountId, &ordersUpdatedAt, &transfersUpdatedAt)
+	err = rows.Scan(&port.Id, &port.Name, &port.Type, &port.UserId, &tdAccountId, &rhAccountId, &ordersUpdatedAt, &transfersUpdatedAt)
 	if err != nil {
 		return nil, err
 	}
 	if tdAccountId.Valid {
 		port.TDAccountId = int(tdAccountId.Int64)
+	}
+	if rhAccountId.Valid {
+		port.RHAccountId = int(rhAccountId.Int64)
 	}
 	if ordersUpdatedAt.Valid {
 		port.OrdersUpdatedAt = ordersUpdatedAt.Time
@@ -61,6 +67,7 @@ func FetchPortfolioByTDAccountId(tdAccountId int) (*Portfolio, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	if !rows.Next() {
 		return nil, fmt.Errorf("no portfolio with tda_account_id %d found", tdAccountId)
 	}
@@ -77,20 +84,25 @@ func FetchPortfolioByTDAccountId(tdAccountId int) (*Portfolio, error) {
 }
 
 func FetchPortfoliosByUserId(userId int) ([]Portfolio, error) {
-	rows, err := db.Query("SELECT id, name, type, user_id, tda_account_id FROM portfolios WHERE user_id=$1", userId)
+	rows, err := db.Query("SELECT id, name, type, user_id, tda_account_id, rh_account_id FROM portfolios WHERE user_id=$1", userId)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	var ports []Portfolio
 	for rows.Next() {
 		var port Portfolio
 		var tdAccountId sql.NullInt64
-		err = rows.Scan(&port.Id, &port.Name, &port.Type, &port.UserId, &tdAccountId)
+		var rhAccountId sql.NullInt64
+		err = rows.Scan(&port.Id, &port.Name, &port.Type, &port.UserId, &tdAccountId, &rhAccountId)
 		if err != nil {
 			return nil, err
 		}
 		if tdAccountId.Valid {
 			port.TDAccountId = int(tdAccountId.Int64)
+		}
+		if rhAccountId.Valid {
+			port.RHAccountId = int(rhAccountId.Int64)
 		}
 		ports = append(ports, port)
 	}

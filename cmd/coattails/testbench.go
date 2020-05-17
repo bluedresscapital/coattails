@@ -6,8 +6,9 @@ import (
 	"log"
 	"time"
 
+	"github.com/bluedresscapital/coattails/pkg/robinhood"
 	"github.com/bluedresscapital/coattails/pkg/secrets"
-	"github.com/bluedresscapital/coattails/pkg/tda"
+	"github.com/bluedresscapital/coattails/pkg/stockings"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"github.com/joho/godotenv"
 )
@@ -18,13 +19,14 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 	var (
-		wait      time.Duration
-		pgHost    string
-		pgPort    int
-		pgUser    string
-		pgPwd     string
-		pgDb      string
-		cacheHost string
+		wait        time.Duration
+		pgHost      string
+		pgPort      int
+		pgUser      string
+		pgPwd       string
+		pgDb        string
+		cacheHost   string
+		debugNoDeps bool
 	)
 
 	flag.DurationVar(&wait,
@@ -37,22 +39,21 @@ func main() {
 	flag.StringVar(&pgPwd, "pg-pwd", "bdc", "postgresql password")
 	flag.StringVar(&pgDb, "pg-db", "wardrobe", "postgresql db")
 	flag.StringVar(&cacheHost, "redis-host", "localhost", "redis host")
+	flag.BoolVar(&debugNoDeps, "run-without-deps", false, "debug setting")
+	//first arg is a pointer, second arg is the value we are checking for, third value is what we set if we don't see the flag, fourth is description
 	flag.Parse()
 	// Initialize singleton instances after parsing flag
-	secrets.InitSundress()
-	wardrobe.InitDB(fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		pgHost, pgPort, pgUser, pgPwd, pgDb))
-
-	for i := 0; i < 10; i++ {
-		tdaAPI := tda.API{AccountId: 2}
-		_, err = tdaAPI.GetOrders()
-		if err != nil {
-			log.Fatalf("Error making fake request: %v", err)
-		}
-		tdaAPI = tda.API{AccountId: 1}
-		_, err = tdaAPI.GetOrders()
-		if err != nil {
-			log.Fatalf("Error making fake request: %v", err)
-		}
+	stockings.InitKeygen()
+	if debugNoDeps {
+		log.Println("Warning: You are starting a server without a Database and Cache")
+		log.Println("Calls to functions that use a Database or Cache will segfault")
+	} else {
+		wardrobe.InitDB(fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+			pgHost, pgPort, pgUser, pgPwd, pgDb))
+		wardrobe.InitCache(cacheHost)
 	}
+	secrets.InitSundress()
+
+	rhApi := robinhood.API{AccountId: 2}
+	rhApi.GetOrders()
 }

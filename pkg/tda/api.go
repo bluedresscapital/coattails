@@ -8,6 +8,7 @@ import (
 	"net/http"
 	url2 "net/url"
 
+	"github.com/bluedresscapital/coattails/pkg/util"
 	"github.com/shopspring/decimal"
 )
 
@@ -117,7 +118,7 @@ type TDTransfers []TDTransfer
 
 func ScrapeTransactions(authTok string, accountId string) (TDTransactions, error) {
 	url := fmt.Sprintf("https://api.tdameritrade.com/v1/accounts/%s/transactions", accountId)
-	resp, err := makeGetRequest(authTok, url)
+	resp, err := util.MakeGetRequest(authTok, url)
 	if err != nil {
 		return nil, err
 	}
@@ -129,15 +130,4 @@ func ScrapeTransactions(authTok string, accountId string) (TDTransactions, error
 		return nil, err
 	}
 	return orders, nil
-}
-
-func makeGetRequest(authTok string, url string) (*http.Response, error) {
-	var bearer = fmt.Sprintf("Bearer %s", authTok)
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Add("Authorization", bearer)
-	client := &http.Client{}
-	return client.Do(req)
 }

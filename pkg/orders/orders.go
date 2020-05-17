@@ -20,6 +20,9 @@ func ReloadOrders(order OrderAPI, stock stockings.StockAPI) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	if orders == nil || len(orders) == 0 {
+		return false, nil
+	}
 	var portId int
 	for _, o := range orders {
 		portId = o.PortId

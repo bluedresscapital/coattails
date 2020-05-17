@@ -15,6 +15,9 @@ func ReloadTransfers(transfer TransferAPI) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	if transfers == nil || len(transfers) == 0 {
+		return false, nil
+	}
 	var portId int
 	for _, t := range transfers {
 		portId = t.PortId
