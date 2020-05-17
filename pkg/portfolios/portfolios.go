@@ -32,7 +32,6 @@ func ReloadHistory(portfolio wardrobe.Portfolio) error {
 	dates := util.GetMarketDates(start, time.Now())
 	// Computes portfolio (mapping of stock to quantity) snapshot per day
 	portSnapshots := getPortfolioSnapshots(orders, transfers, dates)
-	log.Printf("%v", portSnapshots[time.Date(2019, 12, 25, 0, 0, 0, 0, time.UTC)])
 	// Computes portfolio values (cash, stock_values, daily_net_deposited) per day
 	portValues := computePortValues(dates, portSnapshots, portfolio.Id)
 	log.Printf("%v", portValues[time.Date(2019, 12, 25, 0, 0, 0, 0, time.UTC)])
@@ -108,9 +107,6 @@ func computePortValues(dates []time.Time, snapshots portSnapshots, portId int) m
 			continue
 		}
 		for _, price := range *prices {
-			if !util.IsMarketOpen(price.Date) {
-				continue
-			}
 			price.Date = util.GetTimelessDate(price.Date)
 			portSnapshot, found := snapshots[price.Date]
 			if !found {

@@ -1,6 +1,8 @@
 package util
 
-import "time"
+import (
+	"time"
+)
 
 func IsMarketOpen(date time.Time) bool {
 	return int(date.Weekday()) != 0 && int(date.Weekday()) != 6
@@ -15,11 +17,15 @@ func GetTimelessDate(date time.Time) time.Time {
 func GetMarketDates(start time.Time, end time.Time) []time.Time {
 	start = GetTimelessDate(start)
 	end = GetTimelessDate(end)
+	// Not sure what we should do if start is a weekend...
+	//if int(start.Weekday()) == 0 {
+	//	start = start.AddDate(0, 0, -2)
+	//} else if int(start.Weekday()) == 6 {
+	//	start = start.AddDate(0, 0, -1)
+	//}
 	var dates []time.Time
 	for currDate := start; currDate.Before(end.AddDate(0, 0, 1)); currDate = currDate.AddDate(0, 0, 1) {
-		if IsMarketOpen(currDate) {
-			dates = append(dates, currDate)
-		}
+		dates = append(dates, currDate)
 	}
 	return dates
 }
