@@ -66,12 +66,10 @@ func GetHistoricalRange(api StockAPI, ticker string, start time.Time, end time.T
 			missingQuote = true
 			break
 		}
-		//if sq.IsValidDate {
 		*res = append(*res, HistoricalStock{
 			Date:  sq.Date,
 			Price: sq.Price,
 		})
-		//}
 	}
 	if !missingQuote {
 		return res, nil
@@ -101,6 +99,7 @@ func GetHistoricalRange(api StockAPI, ticker string, start time.Time, end time.T
 	if err != nil {
 		return nil, err
 	}
+	ret := make(HistoricalStocks, 0)
 	for currDate := start; currDate.Before(end.AddDate(0, 0, 1)); currDate = currDate.AddDate(0, 0, 1) {
 		price, found := stockMap[currDate]
 		if found {
@@ -115,6 +114,10 @@ func GetHistoricalRange(api StockAPI, ticker string, start time.Time, end time.T
 		if err != nil {
 			return nil, err
 		}
+		ret = append(ret, HistoricalStock{
+			Date:  currDate,
+			Price: currPrice,
+		})
 	}
-	return stocksP, nil
+	return &ret, nil
 }

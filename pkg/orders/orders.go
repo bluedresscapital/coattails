@@ -7,8 +7,6 @@ import (
 	"github.com/bluedresscapital/coattails/pkg/stockings"
 	"github.com/bluedresscapital/coattails/pkg/util"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
-	"github.com/google/uuid"
-	"github.com/shopspring/decimal"
 )
 
 type OrderAPI interface {
@@ -30,23 +28,21 @@ func ReloadOrders(order OrderAPI, stock stockings.StockAPI) (bool, error) {
 		if o.Value.IsZero() {
 			price, err := stockings.GetHistoricalPrice(stock, o.Stock, o.Date)
 			if err != nil {
-				log.Printf("Unable to get price for stock %s at date %s, setting it to -1", o.Stock, o.Date)
-				o.Value = decimal.New(-1, 0)
-			} else {
-				o.Value = *price
-				// Treat transferred assets as a simple deposit of $(price), and then buying the asset at $(price).
-				t := wardrobe.Transfer{
-					Uid:           fmt.Sprintf("TRANSFER_FROM_ASSETS__%s", uuid.New().String()),
-					PortId:        portId,
-					Amount:        o.Quantity.Mul(*price),
-					IsDeposit:     true,
-					ManuallyAdded: false, // Not sure if this counts as manually adding, but oh well :D
-					Date:          util.GetTimelessDate(o.Date),
-				}
-				err = wardrobe.UpsertTransfer(t)
-				if err != nil {
-					log.Printf("Error upserting transfer: %v, not erroring out tho", err)
-				}
+				return false, fmt.Errorf("unable to get a price for stock %s at date %s: %v", o.Stock, o.Date, err)
+			}
+			o.Value = *price
+			// Treat transferred assets as a simple deposit of $(price), and then buying the asset at $(price).
+			t := wardrobe.Transfer{
+				Uid:           fmt.Sprintf("TRANSFER_FROM_ASSETS__%s", o.Uid),
+				PortId:        portId,
+				Amount:        o.Quantity.Mul(*price),
+				IsDeposit:     true,
+				ManuallyAdded: false, // Not sure if this counts as manually adding, but oh well :D
+				Date:          util.GetTimelessDate(o.Date),
+			}
+			err = wardrobe.UpsertTransfer(t)
+			if err != nil {
+				log.Printf("Error upserting transfer: %v, not erroring out tho", err)
 			}
 		}
 		err = wardrobe.InsertIgnoreOrder(o)

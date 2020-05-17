@@ -32,8 +32,10 @@ func ReloadHistory(portfolio wardrobe.Portfolio) error {
 	dates := util.GetMarketDates(start, time.Now())
 	// Computes portfolio (mapping of stock to quantity) snapshot per day
 	portSnapshots := getPortfolioSnapshots(orders, transfers, dates)
+	log.Printf("%v", portSnapshots[time.Date(2019, 12, 25, 0, 0, 0, 0, time.UTC)])
 	// Computes portfolio values (cash, stock_values, daily_net_deposited) per day
 	portValues := computePortValues(dates, portSnapshots, portfolio.Id)
+	log.Printf("%v", portValues[time.Date(2019, 12, 25, 0, 0, 0, 0, time.UTC)])
 	for _, pv := range portValues {
 		err = wardrobe.UpsertPortfolioValue(pv)
 		if err != nil {
@@ -78,6 +80,8 @@ func ComputePortfolioPerformance(pvs []wardrobe.PortValue) []PortPerformance {
 				NormPortTotal: pv.StockValue.Add(pv.NormalizedCash),
 			}
 		}
+		// Don't remove this until we're sure our portfolio history is bullet proof!
+		//log.Printf("[%s] cum: %s, change: %s, total: %s, cash: %s, stock_value: %s, net_deposited: %s", pv.Date, portPerfs[i].CumChange, portPerfs[i].DailyChange, pv.Cash.Add(pv.StockValue), pv.Cash, pv.StockValue, pv.DailyNetDeposited)
 	}
 	return portPerfs
 }
