@@ -1,7 +1,7 @@
 package robinhood
 
 import (
-	"log"
+	"github.com/shopspring/decimal"
 
 	"github.com/bluedresscapital/coattails/pkg/orders"
 	"github.com/bluedresscapital/coattails/pkg/transfers"
@@ -18,11 +18,45 @@ var _ transfers.TransferAPI = (*API)(nil)
 func (api API) GetOrders() ([]wardrobe.Order, error) {
 	bearerTok, err := api.getAuthToken()
 	if err != nil {
-		log.Printf("Errored out: %v", err)
 		return nil, err
 	}
-	ScrapeOrders(*bearerTok)
-	return nil, nil
+	port, err := wardrobe.FetchPortfolioByRHAccountId(api.AccountId)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := ScrapeOrders(*bearerTok)
+	if err != nil {
+		return nil, err
+	}
+	ret := make([]wardrobe.Order, 0)
+	for _, o := range res {
+		if len(o.Executions) == 0 {
+			continue
+		}
+		shares := decimal.Zero
+		amount := decimal.Zero
+		for _, e := range o.Executions {
+			shares = shares.Add(e.Quantity)
+			amount = amount.Add(e.Price.Mul(e.Quantity))
+		}
+		avgPrice := amount.Div(shares)
+		stockP, err := FetchStockFromInstrumentId(o.Instrument)
+		if err != nil {
+			return nil, err
+		}
+		ret = append(ret, wardrobe.Order{
+			Uid:           o.Id,
+			PortId:        port.Id,
+			Stock:         *stockP,
+			Quantity:      shares,
+			Value:         avgPrice,
+			IsBuy:         o.Side == "buy",
+			ManuallyAdded: false,
+			Date:          o.LastTransactionAt,
+		})
+	}
+	return ret, nil
 }
 
 func (api API) GetTransfers() ([]wardrobe.Transfer, error) {

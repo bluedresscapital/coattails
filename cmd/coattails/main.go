@@ -66,7 +66,12 @@ func main() {
 	wait := initDeps()
 	r := mux.NewRouter().StrictSlash(true)
 	handler := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000", "http://127.0.0.1:3000", "http://bdc-web:38001", "http://localhost:5000"},
+		AllowedOrigins: []string{
+			"http://localhost:3000",
+			"http://127.0.0.1:3000",
+			"http://localhost:5000",
+			"https://bluedresscapital.mgb.dog",
+		},
 		AllowCredentials: true,
 	}).Handler(r)
 

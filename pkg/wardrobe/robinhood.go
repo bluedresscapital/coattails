@@ -71,3 +71,16 @@ func FetchRHAccount(id int) (*RHAccount, error) {
 	rhAcc.RefreshTok = *refreshTok
 	return &rhAcc, nil
 }
+
+func GetStockFromInstrumentId(instrumentId string) (*string, error) {
+	res, err := cache.Get(instrumentId).Result()
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func SetStockFromInstrument(instrument string, stock string) error {
+	_, err := cache.Set(instrument, stock, 0).Result()
+	return err
+}

@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/bluedresscapital/coattails/pkg/wardrobe"
+
 	"github.com/shopspring/decimal"
 
 	"github.com/bluedresscapital/coattails/pkg/util"
@@ -76,34 +78,55 @@ func FetchBearerToken(refreshTok string) (*RHAuthResponse, error) {
 	return &res, nil
 }
 
-func ScrapeOrders(bearerTok string) {
+func ScrapeOrders(bearerTok string) ([]RHOrdersResults, error) {
 	res := make([]RHOrdersResults, 0)
 	url := OrdersUrl
 	for {
-		log.Printf("Making request to %s", url)
 		resp, err := util.MakeGetRequest(bearerTok, url)
 		if err != nil {
-			log.Printf("Error: %v", err)
+			return nil, err
 		}
+		defer resp.Body.Close()
 		body, _ := ioutil.ReadAll(resp.Body)
 		var orders RHOrdersResponse
 		err = json.Unmarshal(body, &orders)
 		if err != nil {
-			log.Printf("Error unmarshalling: %v", err)
+			return nil, err
 		}
 		for _, r := range orders.Results {
 			res = append(res, r)
 		}
+		log.Printf("next: %s", orders.Next)
 		if orders.Next == "" {
 			break
 		}
 		url = orders.Next
 	}
-	for _, o := range res {
-		if len(o.Executions) != 1 {
-			log.Printf("This has multiple (or none?) executions: %v", o)
-		}
+	return res, nil
+}
+
+type InstrumentResponse struct {
+	Symbol string `json:"symbol"`
+}
+
+func FetchStockFromInstrumentId(instrument string) (*string, error) {
+	stock, err := wardrobe.GetStockFromInstrumentId(instrument)
+	if err == nil {
+		return stock, nil
 	}
+	resp, err := http.Get(instrument)
+	if err != nil {
+		return nil, err
+	}
+	body, _ := ioutil.ReadAll(resp.Body)
+	defer resp.Body.Close()
+	var res InstrumentResponse
+	err = json.Unmarshal(body, &res)
+	if err != nil {
+		return nil, err
+	}
+	wardrobe.SetStockFromInstrument(instrument, res.Symbol)
+	return &res.Symbol, nil
 }
 
 func ScrapeTransfers(bearerTok string) {
