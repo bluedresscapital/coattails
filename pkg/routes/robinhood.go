@@ -6,9 +6,7 @@ import (
 	"net/http"
 
 	"github.com/bluedresscapital/coattails/pkg/robinhood"
-
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
-
 	"github.com/gorilla/mux"
 )
 
@@ -25,8 +23,10 @@ func fetchRHAccountsHandler(userId *int, w http.ResponseWriter, r *http.Request)
 }
 
 type CreateRHPortRequest struct {
-	Name       string `json:"name"`
-	RefreshTok string `json:"refresh_token"`
+	Name      string `json:"name"`
+	Username  string `json:"username"`
+	Password  string `json:"password"`
+	DeviceTok string `json:"device_token"`
 }
 
 func createRHPortfolioHandler(userId *int, w http.ResponseWriter, r *http.Request) {
@@ -36,14 +36,14 @@ func createRHPortfolioHandler(userId *int, w http.ResponseWriter, r *http.Reques
 		return
 	}
 	// Verify that the refresh token is valid by using it
-	auth, err := robinhood.FetchBearerToken(req.RefreshTok)
+	auth, err := robinhood.Login(req.Username, req.Password, req.DeviceTok)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 	// IMPORTANT: Use the NEW auth refresh token, not the request refresh token.
 	// The request token is now invalid
-	err = wardrobe.CreateRHPortfolio(*userId, req.Name, auth.RefreshTok)
+	err = wardrobe.CreateRHPortfolio(*userId, req.Name, req.Username, req.Password, req.DeviceTok, auth.RefreshTok)
 	if err != nil {
 		log.Printf("Error creating rh portfolio: %v", err)
 		return

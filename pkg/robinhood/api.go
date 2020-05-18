@@ -18,6 +18,7 @@ import (
 
 const (
 	ClientId               = "c82SH0WZOsabOXGP2sxqcj34FxkvfnWRZBKlBjFS"
+	AuthUrl                = "https://api.robinhood.com/oauth2/token/"
 	OrdersUrl              = "https://api.robinhood.com/orders/"
 	TransfersUrl           = "https://api.robinhood.com/ach/transfers/"
 	ReceivedTransfersUrl   = "https://api.robinhood.com/ach/received/transfers/"
@@ -48,6 +49,22 @@ type RHAuthResponse struct {
 	RefreshTok string `json:"refresh_token"`
 }
 
+func Login(username string, password string, deviceTok string) (*RHAuthResponse, error) {
+	reqBody, err := json.Marshal(map[string]string{
+		"username":     username,
+		"password":     password,
+		"device_token": deviceTok,
+		"client_id":    ClientId,
+		"expires_in":   "86400",
+		"grant_type":   "password",
+		"scope":        "internal",
+	})
+	if err != nil {
+		return nil, err
+	}
+	return fetchRHAuthResponse(reqBody)
+}
+
 // Fetches bearer token using refresh token, HOWEVER this immediately invalidates the current
 // refresh token. MUST use the new one returned by this call!
 func FetchBearerToken(refreshTok string) (*RHAuthResponse, error) {
@@ -61,7 +78,11 @@ func FetchBearerToken(refreshTok string) (*RHAuthResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	resp, err := http.Post("https://api.robinhood.com/oauth2/token/", "application/json", bytes.NewBuffer(reqBody))
+	return fetchRHAuthResponse(reqBody)
+}
+
+func fetchRHAuthResponse(reqBody []byte) (*RHAuthResponse, error) {
+	resp, err := http.Post(AuthUrl, "application/json", bytes.NewBuffer(reqBody))
 	if err != nil {
 		return nil, err
 	}

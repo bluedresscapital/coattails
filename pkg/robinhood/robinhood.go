@@ -1,11 +1,12 @@
 package robinhood
 
 import (
-	"github.com/shopspring/decimal"
+	"log"
 
 	"github.com/bluedresscapital/coattails/pkg/orders"
 	"github.com/bluedresscapital/coattails/pkg/transfers"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
+	"github.com/shopspring/decimal"
 )
 
 type API struct {
@@ -92,9 +93,15 @@ func (api API) getAuthToken() (*string, error) {
 	if err != nil {
 		return nil, err
 	}
-	auth, err := FetchBearerToken(acc.RefreshTok)
+	var auth *RHAuthResponse
+	auth, err = FetchBearerToken(acc.RefreshTok)
 	if err != nil {
-		return nil, err
+		// Only login when absolutely necessary (i.e. refresh token expired)
+		log.Print("Fetching bearer token failed with refresh token, logging in instead")
+		auth, err = Login(acc.Username, acc.Password, acc.DeviceTok)
+		if err != nil {
+			return nil, err
+		}
 	}
 	err = wardrobe.UpdateRHRefreshToken(api.AccountId, auth.RefreshTok)
 	if err != nil {

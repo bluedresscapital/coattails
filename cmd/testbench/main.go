@@ -6,11 +6,20 @@ import (
 	"log"
 	"time"
 
-	"github.com/bluedresscapital/coattails/pkg/robinhood"
-	"github.com/bluedresscapital/coattails/pkg/secrets"
 	"github.com/bluedresscapital/coattails/pkg/stockings"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"github.com/joho/godotenv"
+)
+
+var (
+	wait        time.Duration
+	pgHost      string
+	pgPort      int
+	pgUser      string
+	pgPwd       string
+	pgDb        string
+	cacheHost   string
+	debugNoDeps bool
 )
 
 func main() {
@@ -18,16 +27,6 @@ func main() {
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
-	var (
-		wait        time.Duration
-		pgHost      string
-		pgPort      int
-		pgUser      string
-		pgPwd       string
-		pgDb        string
-		cacheHost   string
-		debugNoDeps bool
-	)
 
 	flag.DurationVar(&wait,
 		"graceful-timeout",
@@ -52,8 +51,5 @@ func main() {
 			pgHost, pgPort, pgUser, pgPwd, pgDb))
 		wardrobe.InitCache(cacheHost)
 	}
-	secrets.InitSundress()
-
-	rhApi := robinhood.API{AccountId: 2}
-	rhApi.GetOrders()
+	//secrets.InitSundress(false, "")
 }
