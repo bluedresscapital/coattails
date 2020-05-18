@@ -4,28 +4,15 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
-	"github.com/bluedresscapital/coattails/pkg/secrets"
 	"github.com/gorilla/mux"
 )
 
 func testHandler(w http.ResponseWriter, r *http.Request) {
-	plaintext := "1234"
-	log.Printf("plaintext: %s", plaintext)
-
-	cipher := secrets.Encrypt(plaintext)
-	log.Printf("first cipher: %s", cipher)
-
-	cipher2 := secrets.Encrypt(plaintext)
-	log.Printf("second cipher: %s", cipher2)
-
-	decryptedCipher := secrets.Decrypt(cipher)
-	log.Printf("Decrypted cipher: %s", decryptedCipher)
-
-	decryptedCipher2 := secrets.Decrypt(cipher2)
-	log.Printf("Decrypted second cipher: %s", decryptedCipher2)
-
-	_, _ = fmt.Fprintf(w, "Welcome home!!!")
+	log.Print("Sleeping 5s..")
+	time.Sleep(time.Duration(5) * time.Second)
+	log.Print("done!")
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {

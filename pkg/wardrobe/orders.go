@@ -94,6 +94,9 @@ func InsertIgnoreOrder(o Order) error {
 	return err
 }
 
+// WARNING: This should only be called by the manual upsert order handler.
+// If an automated system calls this function, we will always have uncommitted orders
+// and we'll be re-running alot of reloading data
 func UpsertOrder(o Order) error {
 	err := UpsertStock(o.Stock)
 	if err != nil {

@@ -43,7 +43,7 @@ func ReloadOrders(order OrderAPI, stock stockings.StockAPI) (bool, error) {
 				ManuallyAdded: false, // Not sure if this counts as manually adding, but oh well :D
 				Date:          util.GetTimelessDate(o.Date),
 			}
-			err = wardrobe.UpsertTransfer(t)
+			err = wardrobe.InsertIgnoreTransfer(t)
 			if err != nil {
 				log.Printf("Error upserting transfer: %v, not erroring out tho", err)
 			}

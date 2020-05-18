@@ -91,21 +91,47 @@ func getHistoricalStocks(ticker string, start time.Time, end time.Time) (*Histor
 		return nil, err
 	}
 	// a little bit of blackboxing here, but this iter contains all the information we need
-	return piqConvertToHistoricalRange(historicalRange, start, end), nil
+	return piqConvertToHistoricalRange(historicalRange, start, end)
 }
 
 // piqConvertToHistoricalRange converts to accepted interface struct
-func piqConvertToHistoricalRange(stocks *piqHistoricalStocks, start time.Time, end time.Time) *HistoricalStocks {
+func piqConvertToHistoricalRange(stocks *piqHistoricalStocks, start time.Time, end time.Time) (*HistoricalStocks, error) {
+	priceMap := make(map[time.Time]decimal.Decimal)
+	for _, s := range *stocks {
+		date := parseTimestamp(s.Timestamp)
+		priceMap[date] = s.Close
+	}
+	currPrice := decimal.Zero
 	ret := new(HistoricalStocks)
-	for i := 0; i < len(*stocks); i++ {
-		date := util.GetTimelessDate(time.Unix(int64((*stocks)[i].Timestamp), 0))
-		if date.Before(start) || date.After(end) {
-			continue
+	for currDate := start; currDate.Before(end.AddDate(0, 0, 1)); currDate = currDate.AddDate(0, 0, 1) {
+		price, found := priceMap[currDate]
+		if !found {
+			if currPrice.IsZero() {
+				currPrice = getMostRecentPrice(stocks, start)
+			}
+		} else {
+			currPrice = price
 		}
 		*ret = append(*ret, HistoricalStock{
-			Date:  date,
-			Price: (*stocks)[i].Close,
+			Date:  currDate,
+			Price: currPrice,
 		})
 	}
-	return ret
+	return ret, nil
+}
+
+func getMostRecentPrice(stocks *piqHistoricalStocks, start time.Time) decimal.Decimal {
+	var price decimal.Decimal
+	for _, s := range *stocks {
+		date := parseTimestamp(s.Timestamp)
+		if date.After(start) {
+			return price
+		}
+		price = s.Close
+	}
+	return price
+}
+
+func parseTimestamp(ts int) time.Time {
+	return util.GetTimelessDate(time.Unix(int64(ts), 0))
 }

@@ -163,3 +163,18 @@ func FetchPortfolioValuesByPortId(portId int) ([]PortValue, error) {
 	}
 	return pvs, nil
 }
+
+func FetchAllPortfolioIds() ([]int, error) {
+	rows, err := db.Query(`SELECT id FROM portfolios`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	ids := make([]int, 0)
+	for rows.Next() {
+		var id int
+		err = rows.Scan(&id)
+		ids = append(ids, id)
+	}
+	return ids, nil
+}

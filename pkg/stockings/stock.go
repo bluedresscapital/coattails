@@ -2,6 +2,7 @@ package stockings
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/bluedresscapital/coattails/pkg/util"
@@ -56,68 +57,56 @@ func GetCurrentPrice(api StockAPI, ticker string) (*decimal.Decimal, error) {
 
 // GetHistoricalRange will return prices for *EVERY DAY* from start to end
 func GetHistoricalRange(api StockAPI, ticker string, start time.Time, end time.Time) (*HistoricalStocks, error) {
+	if start.After(end) {
+		return nil, fmt.Errorf("start date (%s) is after end (%s)", start, end)
+	}
 	start = util.GetTimelessDate(start)
 	end = util.GetTimelessDate(end)
-	res := new(HistoricalStocks)
-	missingQuote := false
-	for currDate := start; currDate.Before(end.AddDate(0, 0, 1)); currDate = currDate.AddDate(0, 0, 1) {
-		sq, found, err := wardrobe.FetchStockQuote(ticker, currDate)
-		if err != nil || !found {
-			missingQuote = true
-			break
+	days := int(end.Sub(start).Hours()/24) + 1 // Add one to include end date
+	log.Printf("There should be %d days between %s and %s, inclusive. Checking stock quotes db for that exact count", days, start, end)
+	count, err := wardrobe.FetchStockQuoteCount(ticker, start, end)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("We have %d stock quotes between %s to %s", *count, start, end)
+	if days == *count {
+		log.Printf("Fetching stock quotes from db...")
+		sq, err := wardrobe.FetchStockQuotes(ticker, start, end)
+		if err != nil {
+			return nil, err
 		}
-		*res = append(*res, HistoricalStock{
-			Date:  sq.Date,
-			Price: sq.Price,
-		})
+		ret := new(HistoricalStocks)
+		for _, q := range sq {
+			*ret = append(*ret, HistoricalStock{
+				Date:  q.Date,
+				Price: q.Price,
+			})
+		}
+		return ret, nil
 	}
-	if !missingQuote {
-		return res, nil
-	}
+	log.Printf("Fetching stock quotes from api...")
 	stocksP, err := api.GetHistoricalRange(ticker, start, end)
 	if err != nil {
 		return nil, fmt.Errorf("errored out from stock api's get historical range: %v", err)
 	}
-	stocks := *stocksP
-	stockMap := make(map[time.Time]decimal.Decimal)
-	for _, stock := range stocks {
-		stockMap[stock.Date] = stock.Price
+	log.Printf("Finished fetching stock quotes from api!")
+	if len(*stocksP) != days {
+		return nil, fmt.Errorf("api.GetHistoricalRange should've returned %d prices between %s to %s, only got %d", days, start, end, len(*stocksP))
 	}
-
-	var currPrice decimal.Decimal
-	if len(stocks) == 0 || stocks[0].Date.After(start) {
-		historicalPrice, err := api.GetHistoricalPrice(ticker, start)
-		if err != nil {
-			return nil, fmt.Errorf("errored out from stock api's get historical price: %v", err)
-		}
-		currPrice = historicalPrice.Price
-	} else {
-		currPrice = stocks[0].Price
+	quotes := make([]wardrobe.StockQuote, 0)
+	for _, s := range *stocksP {
+		quotes = append(quotes, wardrobe.StockQuote{
+			Stock:       ticker,
+			Price:       s.Price,
+			Date:        s.Date,
+			IsValidDate: true,
+		})
 	}
-	// In case the underlying stock is missing, just upsert it :)
-	err = wardrobe.UpsertStock(ticker)
+	log.Printf("Bulk inserting stock quotes...")
+	err = wardrobe.BatchUpsertStockQuotes(quotes)
 	if err != nil {
 		return nil, err
 	}
-	ret := make(HistoricalStocks, 0)
-	for currDate := start; currDate.Before(end.AddDate(0, 0, 1)); currDate = currDate.AddDate(0, 0, 1) {
-		price, found := stockMap[currDate]
-		if found {
-			currPrice = price
-		}
-		err = wardrobe.UpsertStockQuote(wardrobe.StockQuote{
-			Stock:       ticker,
-			Price:       currPrice,
-			Date:        currDate,
-			IsValidDate: found,
-		})
-		if err != nil {
-			return nil, err
-		}
-		ret = append(ret, HistoricalStock{
-			Date:  currDate,
-			Price: currPrice,
-		})
-	}
-	return &ret, nil
+	log.Printf("Done bulk inserting stock quotes!")
+	return stocksP, nil
 }

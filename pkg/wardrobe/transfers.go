@@ -27,6 +27,9 @@ func InsertIgnoreTransfer(t Transfer) error {
 }
 
 // Upserts transfer into db - function is idempotent
+// WARNING: This should only be called by the manual upsert transfer handler.
+// If an automated system calls this function, we will always have uncommitted orders
+// and we'll be re-running alot of reloading data
 func UpsertTransfer(t Transfer) error {
 	_, err := db.Exec(`
 		INSERT INTO transfers (uid, port_id, amount, is_deposit, manually_added, date, committed) 

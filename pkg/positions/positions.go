@@ -10,7 +10,7 @@ import (
 
 // Reloads positions for portId
 // Will also update the portfolio's "positions" and "orders" updated at field
-func ReloadAndSetPortfolioUpdatedAt(portId int, stockAPI stockings.StockAPI) error {
+func Reload(portId int, stockAPI stockings.StockAPI) error {
 	log.Printf("Reloading positions for port %d", portId)
 	orders, err := wardrobe.FetchOrdersByPortfolioId(portId)
 	if err != nil {
@@ -86,15 +86,6 @@ func ReloadAndSetPortfolioUpdatedAt(portId int, stockAPI stockings.StockAPI) err
 		if err != nil {
 			return err
 		}
-	}
-	// Set all orders and transfers as committed!
-	err = wardrobe.SetOrdersCommitted(portId)
-	if err != nil {
-		return err
-	}
-	err = wardrobe.SetTransfersCommitted(portId)
-	if err != nil {
-		return err
 	}
 	return nil
 }

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"time"
 
@@ -218,7 +217,7 @@ type RHBankTransfersResults struct {
 }
 
 func scrapeBankTransfers(bearerTok string) ([]RHBankTransfersResults, error) {
-	log.Print("bank transfers")
+	//log.Print("bank transfers")
 	res := make([]RHBankTransfersResults, 0)
 	url := TransfersUrl
 	for {
@@ -228,7 +227,7 @@ func scrapeBankTransfers(bearerTok string) ([]RHBankTransfersResults, error) {
 		}
 		defer resp.Body.Close()
 		body, _ := ioutil.ReadAll(resp.Body)
-		log.Print(string(body))
+		//log.Print(string(body))
 		var transfers RHBankTransfersResponse
 		err = json.Unmarshal(body, &transfers)
 		if err != nil {
@@ -263,7 +262,6 @@ type RHReceivedTransfersAmount struct {
 }
 
 func scrapeReceviedTransfers(bearerTok string) ([]RHReceivedTransfersResults, error) {
-	log.Print("received transfers")
 	res := make([]RHReceivedTransfersResults, 0)
 	url := ReceivedTransfersUrl
 	for {
@@ -273,7 +271,7 @@ func scrapeReceviedTransfers(bearerTok string) ([]RHReceivedTransfersResults, er
 		}
 		defer resp.Body.Close()
 		body, _ := ioutil.ReadAll(resp.Body)
-		log.Print(string(body))
+		//log.Print(string(body))
 		var transfers RHReceivedTransfersResponse
 		err = json.Unmarshal(body, &transfers)
 		if err != nil {

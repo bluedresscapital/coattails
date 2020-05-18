@@ -29,10 +29,10 @@ func InitSundress(loadFromFile bool, filePath string) {
 
 func initDataKey(loadFromFile bool, filePath string) {
 	if loadFromFile {
-		log.Printf("Initializing Bdc datakey from file %s", filePath)
+		log.Printf("Initializing bdc datakey from file %s", filePath)
 		b, err := ioutil.ReadFile(filePath)
 		if err != nil {
-			log.Fatalf("Unable to read datakey from file %s", filePath)
+			log.Fatalf("Unable to read bdc datakey from file %s", filePath)
 		}
 		dataKey = string(b)
 	} else {

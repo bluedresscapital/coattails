@@ -5,6 +5,19 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/bluedresscapital/coattails/pkg/routes"
+
+	"github.com/bluedresscapital/coattails/pkg/diapers"
+
+	"github.com/bluedresscapital/coattails/pkg/stockings"
+
+	"github.com/bluedresscapital/coattails/pkg/orders"
+	"github.com/bluedresscapital/coattails/pkg/transfers"
+
+	"github.com/bluedresscapital/coattails/pkg/robinhood"
+
+	"github.com/bluedresscapital/coattails/pkg/tda"
+
 	"github.com/bluedresscapital/coattails/pkg/secrets"
 
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
@@ -23,8 +36,48 @@ var (
 	bdcKeyFile         string
 )
 
-func reloadAllPortfolios() {
-
+func reloadPortfolios() {
+	ids, err := wardrobe.FetchAllPortfolioIds()
+	if err != nil {
+		log.Fatalf("error fetching portfolio ids: %v", err)
+	}
+	for _, id := range ids {
+		log.Printf("Reloading portfolio %d", id)
+		port, err := wardrobe.FetchPortfolioById(id)
+		if err != nil {
+			log.Fatalf("error fetching portfolio by id: %v", err)
+		}
+		var orderAPI orders.OrderAPI
+		var transferAPI transfers.TransferAPI
+		if port.Type == "tda" {
+			orderAPI = tda.API{AccountId: port.TDAccountId}
+			transferAPI = tda.API{AccountId: port.TDAccountId}
+		} else if port.Type == "rh" {
+			orderAPI = robinhood.API{AccountId: port.RHAccountId}
+			transferAPI = robinhood.API{AccountId: port.RHAccountId}
+		}
+		if orderAPI != nil && transferAPI != nil {
+			needsOrderReload, err := orders.ReloadOrders(orderAPI, stockings.FingoPack{})
+			if err != nil {
+				log.Fatalf("error reloading orders: %v", err)
+			}
+			depsChanged := make([]diapers.Data, 0)
+			if needsOrderReload {
+				depsChanged = append(depsChanged, diapers.Order)
+			}
+			needsTransferReload, err := transfers.ReloadTransfers(transferAPI)
+			if err != nil {
+				log.Fatalf("error reloading transfers: %v", err)
+			}
+			if needsTransferReload {
+				depsChanged = append(depsChanged, diapers.Transfer)
+			}
+			err = diapers.BulkReloadDepsAndPublish(depsChanged, port.Id, port.UserId, routes.GetChannelFromUserId(port.UserId))
+			if err != nil {
+				log.Fatalf("error reloading deps for %v: %v", depsChanged, err)
+			}
+		}
+	}
 }
 
 func main() {
@@ -47,10 +100,5 @@ func main() {
 		pgHost, pgPort, pgUser, pgPwd, pgDb))
 	wardrobe.InitCache(cacheHost)
 	secrets.InitSundress(loadBdcKeyFromFile, bdcKeyFile)
-
-	ports, err := wardrobe.FetchPortfoliosByUserId(5)
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Print(ports)
+	reloadPortfolios()
 }

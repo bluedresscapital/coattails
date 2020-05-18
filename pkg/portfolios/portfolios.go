@@ -18,6 +18,7 @@ const (
 )
 
 func ReloadHistory(portfolio wardrobe.Portfolio) error {
+	log.Printf("Reloading portfolio history for portfolio %d", portfolio.Id)
 	orders, err := wardrobe.FetchOrdersByPortfolioId(portfolio.Id)
 	if err != nil {
 		return err
@@ -34,14 +35,12 @@ func ReloadHistory(portfolio wardrobe.Portfolio) error {
 	portSnapshots := getPortfolioSnapshots(orders, transfers, dates)
 	// Computes portfolio values (cash, stock_values, daily_net_deposited) per day
 	portValues := computePortValues(dates, portSnapshots, portfolio.Id)
-	log.Printf("%v", portValues[time.Date(2019, 12, 25, 0, 0, 0, 0, time.UTC)])
 	for _, pv := range portValues {
 		err = wardrobe.UpsertPortfolioValue(pv)
 		if err != nil {
 			return err
 		}
 	}
-
 	return nil
 }
 
@@ -56,6 +55,7 @@ type PortPerformance struct {
 func ComputePortfolioPerformance(pvs []wardrobe.PortValue) []PortPerformance {
 	portPerfs := make([]PortPerformance, len(pvs))
 	cumPerf := decimal.New(1, 0)
+	log.Println("Computing port performance...")
 	for i, pv := range pvs {
 		if i == 0 {
 			portPerfs[i] = PortPerformance{
@@ -80,8 +80,9 @@ func ComputePortfolioPerformance(pvs []wardrobe.PortValue) []PortPerformance {
 			}
 		}
 		// Don't remove this until we're sure our portfolio history is bullet proof!
-		log.Printf("[%s] cum: %s, change: %s, total: %s, cash: %s, stock_value: %s, net_deposited: %s", pv.Date, portPerfs[i].CumChange, portPerfs[i].DailyChange, pv.Cash.Add(pv.StockValue), pv.Cash, pv.StockValue, pv.DailyNetDeposited)
+		//log.Printf("[%s] cum: %s, change: %s, total: %s, cash: %s, stock_value: %s, net_deposited: %s", pv.Date, portPerfs[i].CumChange, portPerfs[i].DailyChange, pv.Cash.Add(pv.StockValue), pv.Cash, pv.StockValue, pv.DailyNetDeposited)
 	}
+	log.Println("Done computing port performance!")
 	return portPerfs
 }
 
