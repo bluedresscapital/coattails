@@ -2,6 +2,7 @@ package secrets
 
 import (
 	"encoding/hex"
+	"io/ioutil"
 	"log"
 	"os"
 
@@ -21,19 +22,28 @@ var (
 	dataKey string
 )
 
-func InitSundress() {
+func InitSundress(loadFromFile bool, filePath string) {
 	initSecret()
-	initDataKey()
+	initDataKey(loadFromFile, filePath)
 }
 
-func initDataKey() {
-	log.Println("Initializing Bdc datakey")
-	cipherStr := os.Getenv("BDC_CIPHER_KEY")
-	cipher, err := hex.DecodeString(cipherStr)
-	if err != nil {
-		log.Fatalf("Unable to decode cipher string: %v", err)
+func initDataKey(loadFromFile bool, filePath string) {
+	if loadFromFile {
+		log.Printf("Initializing Bdc datakey from file %s", filePath)
+		b, err := ioutil.ReadFile(filePath)
+		if err != nil {
+			log.Fatalf("Unable to read datakey from file %s", filePath)
+		}
+		dataKey = string(b)
+	} else {
+		log.Println("Initializing bdc datakey from $BDC_CIPHER_KEY, and decoding it")
+		cipherStr := os.Getenv("BDC_CIPHER_KEY")
+		cipher, err := hex.DecodeString(cipherStr)
+		if err != nil {
+			log.Fatalf("Unable to decode cipher string: %v", err)
+		}
+		dataKey = Decrypt(cipher)
 	}
-	dataKey = Decrypt(cipher)
 }
 
 func initSecret() {

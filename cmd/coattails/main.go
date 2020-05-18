@@ -19,22 +19,24 @@ import (
 	"github.com/rs/cors"
 )
 
-func initDeps() time.Duration {
+var (
+	wait               time.Duration
+	pgHost             string
+	pgPort             int
+	pgUser             string
+	pgPwd              string
+	pgDb               string
+	cacheHost          string
+	debugNoDeps        bool
+	loadBdcKeyFromFile bool
+	bdcKeyFile         string
+)
+
+func initDeps() {
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
-	var (
-		wait        time.Duration
-		pgHost      string
-		pgPort      int
-		pgUser      string
-		pgPwd       string
-		pgDb        string
-		cacheHost   string
-		debugNoDeps bool
-	)
-
 	flag.DurationVar(&wait,
 		"graceful-timeout",
 		time.Second*15,
@@ -46,7 +48,8 @@ func initDeps() time.Duration {
 	flag.StringVar(&pgDb, "pg-db", "wardrobe", "postgresql db")
 	flag.StringVar(&cacheHost, "redis-host", "localhost", "redis host")
 	flag.BoolVar(&debugNoDeps, "run-without-deps", false, "debug setting")
-	//first arg is a pointer, second arg is the value we are checking for, third value is what we set if we don't see the flag, fourth is description
+	flag.BoolVar(&loadBdcKeyFromFile, "load-bdc-key-from-file", false, "flag for whether or not we should get bdc key from file")
+	flag.StringVar(&bdcKeyFile, "bdc-key-file", "", "file location of bdc-key. Required if load-bdc-key-from-file is set")
 	flag.Parse()
 	// Initialize singleton instances after parsing flag
 	stockings.InitKeygen()
@@ -58,12 +61,10 @@ func initDeps() time.Duration {
 			pgHost, pgPort, pgUser, pgPwd, pgDb))
 		wardrobe.InitCache(cacheHost)
 	}
-
-	return wait
 }
 
 func main() {
-	wait := initDeps()
+	initDeps()
 	r := mux.NewRouter().StrictSlash(true)
 	handler := cors.New(cors.Options{
 		AllowedOrigins: []string{
@@ -95,7 +96,7 @@ func main() {
 
 	// NOTE(ma): It's important to initialize secrets AFTER all startup routines are done. In case we run into
 	// a crashloop, we don't want to make unnecessary requests to kms due to our monthly limit
-	secrets.InitSundress()
+	secrets.InitSundress(loadBdcKeyFromFile, bdcKeyFile)
 	c := make(chan os.Signal, 1)
 	// We'll accept graceful shutdowns when quit via SIGINT (Ctrl+C)
 	// SIGKILL, SIGQUIT or SIGTERM (Ctrl+/) will not be caught.
