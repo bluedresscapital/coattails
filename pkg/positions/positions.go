@@ -87,14 +87,14 @@ func ReloadAndSetPortfolioUpdatedAt(portId int, stockAPI stockings.StockAPI) err
 			return err
 		}
 	}
-	// Update portfolio's order and transfer updated at
-	maxOrderUpdatedAt, err := wardrobe.GetMaxOrderUpdatedAt(portId)
+	// Set all orders and transfers as committed!
+	err = wardrobe.SetOrdersCommitted(portId)
 	if err != nil {
 		return err
 	}
-	maxTransferUpdatedAt, err := wardrobe.GetMaxTransferUpdatedAt(portId)
+	err = wardrobe.SetTransfersCommitted(portId)
 	if err != nil {
 		return err
 	}
-	return wardrobe.UpdatePortfolioOrderTransferUpdatedAt(portId, *maxOrderUpdatedAt, *maxTransferUpdatedAt)
+	return nil
 }

@@ -26,13 +26,5 @@ func ReloadTransfers(transfer TransferAPI) (bool, error) {
 			return false, err
 		}
 	}
-	port, err := wardrobe.FetchPortfolioById(portId)
-	if err != nil {
-		return false, err
-	}
-	maxTransferUpdatedAt, err := wardrobe.GetMaxTransferUpdatedAt(portId)
-	if err != nil {
-		return false, err
-	}
-	return port.TransfersUpdatedAt.Before(*maxTransferUpdatedAt), nil
+	return wardrobe.HasUncommittedTransfers(portId)
 }

@@ -112,6 +112,7 @@ func deleteTransferHandler(userId *int, port *wardrobe.Portfolio, w http.Respons
 func reloadTransferHandler(userId *int, port *wardrobe.Portfolio, w http.ResponseWriter, r *http.Request) {
 	var transfer transfers.TransferAPI
 	if port.Type == "tda" {
+		log.Println("Reloading tda transfers")
 		err := validateTdaUsage(*port, *userId)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
@@ -119,6 +120,7 @@ func reloadTransferHandler(userId *int, port *wardrobe.Portfolio, w http.Respons
 		}
 		transfer = tda.API{AccountId: port.TDAccountId}
 	} else if port.Type == "rh" {
+		log.Println("Reloading rh transfers")
 		err := validateRhUsage(*port, *userId)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)

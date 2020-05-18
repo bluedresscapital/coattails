@@ -53,13 +53,5 @@ func ReloadOrders(order OrderAPI, stock stockings.StockAPI) (bool, error) {
 			return false, err
 		}
 	}
-	port, err := wardrobe.FetchPortfolioById(portId)
-	if err != nil {
-		return false, err
-	}
-	maxOrderUpdatedAt, err := wardrobe.GetMaxOrderUpdatedAt(portId)
-	if err != nil {
-		return false, err
-	}
-	return port.OrdersUpdatedAt.Before(*maxOrderUpdatedAt), nil
+	return wardrobe.HasUncommittedOrders(portId)
 }

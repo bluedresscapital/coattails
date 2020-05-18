@@ -19,8 +19,8 @@ type Transfer struct {
 // Inserts transfer into db, ignores if uid already exists
 func InsertIgnoreTransfer(t Transfer) error {
 	_, err := db.Exec(`
-		INSERT INTO transfers (uid, port_id, amount, is_deposit, manually_added, date) 
-		VALUES ($1,$2,$3,$4,$5,$6)
+		INSERT INTO transfers (uid, port_id, amount, is_deposit, manually_added, date, committed) 
+		VALUES ($1,$2,$3,$4,$5,$6,false)
 		ON CONFLICT (uid) DO NOTHING`,
 		t.Uid, t.PortId, t.Amount.StringFixedBank(4), t.IsDeposit, t.ManuallyAdded, t.Date)
 	return err
@@ -29,10 +29,10 @@ func InsertIgnoreTransfer(t Transfer) error {
 // Upserts transfer into db - function is idempotent
 func UpsertTransfer(t Transfer) error {
 	_, err := db.Exec(`
-		INSERT INTO transfers (uid, port_id, amount, is_deposit, manually_added, date) 
-		VALUES ($1,$2,$3,$4,$5,$6)
+		INSERT INTO transfers (uid, port_id, amount, is_deposit, manually_added, date, committed) 
+		VALUES ($1,$2,$3,$4,$5,$6, false)
 		ON CONFLICT (uid) DO UPDATE
-		SET port_id=$2,amount=$3,is_deposit=$4,manually_added=$5,date=$6`,
+		SET port_id=$2,amount=$3,is_deposit=$4,manually_added=$5,date=$6,committed=false`,
 		t.Uid, t.PortId, t.Amount.StringFixedBank(4), t.IsDeposit, t.ManuallyAdded, t.Date)
 	return err
 }
@@ -93,20 +93,24 @@ func DeleteTransfer(uid string, portId int) error {
 	return err
 }
 
-func GetMaxTransferUpdatedAt(portId int) (*time.Time, error) {
-	rows, err := db.Query(`SELECT MAX(updated_at) FROM transfers WHERE port_id=$1`, portId)
+func SetTransfersCommitted(portId int) error {
+	_, err := db.Exec(`UPDATE transfers SET committed=true WHERE port_id=$1`, portId)
+	return err
+}
+
+func HasUncommittedTransfers(portId int) (bool, error) {
+	rows, err := db.Query(`SELECT COUNT(*) FROM transfers WHERE committed=false AND port_id=$1`, portId)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 	defer rows.Close()
 	if !rows.Next() {
-		return nil, fmt.Errorf("no rows found for transfers with port_id %d", portId)
+		return false, fmt.Errorf("no rows returned from count")
 	}
-	var ts time.Time
-	err = rows.Scan(&ts)
+	var count int
+	err = rows.Scan(&count)
 	if err != nil {
-		t := time.Now()
-		return &t, nil
+		return false, err
 	}
-	return &ts, nil
+	return count > 0, nil
 }

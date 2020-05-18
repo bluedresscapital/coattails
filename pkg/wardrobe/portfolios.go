@@ -9,14 +9,12 @@ import (
 )
 
 type Portfolio struct {
-	Id                 int       `json:"id"`
-	Name               string    `json:"name"`
-	Type               string    `json:"type"`
-	UserId             int       `json:"user_id"`
-	TDAccountId        int       `json:"tda_account_id"`
-	RHAccountId        int       `json:"rh_account_id"`
-	OrdersUpdatedAt    time.Time `json:"orders_updated_at"`
-	TransfersUpdatedAt time.Time `json:"transfers_updated_at"`
+	Id          int    `json:"id"`
+	Name        string `json:"name"`
+	Type        string `json:"type"`
+	UserId      int    `json:"user_id"`
+	TDAccountId int    `json:"tda_account_id"`
+	RHAccountId int    `json:"rh_account_id"`
 }
 
 func CreatePortfolio(userId int, name string, portType string) error {
@@ -26,7 +24,7 @@ func CreatePortfolio(userId int, name string, portType string) error {
 
 func FetchPortfolioById(id int) (*Portfolio, error) {
 	rows, err := db.Query(`
-		SELECT id, name, type, user_id, tda_account_id, rh_account_id, orders_updated_at, transfers_updated_at 
+		SELECT id, name, type, user_id, tda_account_id, rh_account_id
 		FROM portfolios WHERE id=$1`, id)
 	if err != nil {
 		return nil, err
@@ -38,9 +36,7 @@ func FetchPortfolioById(id int) (*Portfolio, error) {
 	var port Portfolio
 	var tdAccountId sql.NullInt64
 	var rhAccountId sql.NullInt64
-	var ordersUpdatedAt sql.NullTime
-	var transfersUpdatedAt sql.NullTime
-	err = rows.Scan(&port.Id, &port.Name, &port.Type, &port.UserId, &tdAccountId, &rhAccountId, &ordersUpdatedAt, &transfersUpdatedAt)
+	err = rows.Scan(&port.Id, &port.Name, &port.Type, &port.UserId, &tdAccountId, &rhAccountId)
 	if err != nil {
 		return nil, err
 	}
@@ -49,12 +45,6 @@ func FetchPortfolioById(id int) (*Portfolio, error) {
 	}
 	if rhAccountId.Valid {
 		port.RHAccountId = int(rhAccountId.Int64)
-	}
-	if ordersUpdatedAt.Valid {
-		port.OrdersUpdatedAt = ordersUpdatedAt.Time
-	}
-	if transfersUpdatedAt.Valid {
-		port.TransfersUpdatedAt = transfersUpdatedAt.Time
 	}
 	if rows.Next() {
 		return nil, fmt.Errorf("multiple portfolios found with id %d", id)
@@ -131,12 +121,6 @@ func FetchPortfoliosByUserId(userId int) ([]Portfolio, error) {
 		return make([]Portfolio, 0), nil
 	}
 	return ports, nil
-}
-
-func UpdatePortfolioOrderTransferUpdatedAt(portId int, orderUpdatedAt time.Time, transferUpdatedAt time.Time) error {
-	_, err := db.Exec(`UPDATE portfolios SET orders_updated_at=$1, transfers_updated_at=$2 WHERE id=$3`,
-		orderUpdatedAt, transferUpdatedAt, portId)
-	return err
 }
 
 type PortValue struct {

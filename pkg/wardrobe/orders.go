@@ -85,8 +85,8 @@ func InsertIgnoreOrder(o Order) error {
 		return err
 	}
 	_, err = db.Exec(`
-		INSERT INTO orders (uid, port_id, stock_id, quantity, value, is_buy, manually_added, date)
-			SELECT $1, $2, stocks.id, $4, $5, $6, $7, $8
+		INSERT INTO orders (uid, port_id, stock_id, quantity, value, is_buy, manually_added, date, committed)
+			SELECT $1, $2, stocks.id, $4, $5, $6, $7, $8, false
 			FROM stocks
 			WHERE ticker=$3
 		ON CONFLICT(uid) DO NOTHING`,
@@ -100,12 +100,12 @@ func UpsertOrder(o Order) error {
 		return err
 	}
 	_, err = db.Exec(`
-		INSERT INTO orders (uid, port_id, stock_id, quantity, value, is_buy, manually_added, date)
-			SELECT $1, $2, stocks.id, $4, $5, $6, $7, $8
+		INSERT INTO orders (uid, port_id, stock_id, quantity, value, is_buy, manually_added, date, committed)
+			SELECT $1, $2, stocks.id, $4, $5, $6, $7, $8, false
 			FROM stocks
 			WHERE ticker=$3
 		ON CONFLICT(uid) DO UPDATE
-		SET port_id=$2,stock_id=excluded.stock_id,quantity=$4,value=$5,is_buy=$6,manually_added=$7,date=$8`,
+		SET port_id=$2,stock_id=excluded.stock_id,quantity=$4,value=$5,is_buy=$6,manually_added=$7,date=$8,committed=false`,
 		o.Uid, o.PortId, o.Stock, o.Quantity, o.Value, o.IsBuy, o.ManuallyAdded, o.Date)
 	return err
 }
@@ -115,20 +115,24 @@ func DeleteOrder(uid string, portId int) error {
 	return err
 }
 
-func GetMaxOrderUpdatedAt(portId int) (*time.Time, error) {
-	rows, err := db.Query(`SELECT MAX(updated_at) FROM orders WHERE port_id=$1`, portId)
+func SetOrdersCommitted(portId int) error {
+	_, err := db.Exec(`UPDATE orders SET committed=true WHERE port_id=$1`, portId)
+	return err
+}
+
+func HasUncommittedOrders(portId int) (bool, error) {
+	rows, err := db.Query(`SELECT COUNT(*) FROM orders WHERE committed=false AND port_id=$1`, portId)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 	defer rows.Close()
 	if !rows.Next() {
-		return nil, fmt.Errorf("no rows found for orders with port_id %d", portId)
+		return false, fmt.Errorf("no rows returned from count")
 	}
-	var ts time.Time
-	err = rows.Scan(&ts)
+	var count int
+	err = rows.Scan(&count)
 	if err != nil {
-		t := time.Now()
-		return &t, nil
+		return false, err
 	}
-	return &ts, nil
+	return count > 0, nil
 }
