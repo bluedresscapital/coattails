@@ -96,7 +96,6 @@ func ScrapeOrders(bearerTok string) ([]RHOrdersResults, error) {
 		for _, r := range orders.Results {
 			res = append(res, r)
 		}
-		log.Printf("next: %s", orders.Next)
 		if orders.Next == "" {
 			break
 		}
@@ -129,6 +128,186 @@ func FetchStockFromInstrumentId(instrument string) (*string, error) {
 	return &res.Symbol, nil
 }
 
-func ScrapeTransfers(bearerTok string) {
+type RHTransfersResults struct {
+	Id        string          `json:"id"`
+	IsDeposit bool            `json:"is_deposit"`
+	Amount    decimal.Decimal `json:"amount"`
+	Date      time.Time       `json:"date"`
+}
 
+func ScrapeTransfers(bearerTok string) ([]RHTransfersResults, error) {
+	res := make([]RHTransfersResults, 0)
+	// Normal bank transfers, where you directly withdraw from
+	bankTransfers, err := scrapeBankTransfers(bearerTok)
+	if err != nil {
+		return nil, err
+	}
+	for _, t := range bankTransfers {
+		if t.State == "completed" {
+			res = append(res, RHTransfersResults{
+				Id:        t.Id,
+				IsDeposit: t.Direction == "deposit",
+				Amount:    t.Amount,
+				Date:      t.CreatedAt,
+			})
+		}
+	}
+	// Transfers related to RH Checking Account (i.e. Direct deposit, Venmo)
+	receivedTransfers, err := scrapeReceviedTransfers(bearerTok)
+	if err != nil {
+		return nil, err
+	}
+	for _, t := range receivedTransfers {
+		if t.State == "completed" {
+			res = append(res, RHTransfersResults{
+				Id:        t.Id,
+				IsDeposit: t.Direction == "credit",
+				Amount:    t.Amount.Amount,
+				Date:      t.CreatedAt,
+			})
+		}
+	}
+	// Transfers related to RH debit card usage (Spending, ATM withdrawals)
+	settledTransactions, err := scrapeSettledTransactions(bearerTok)
+	if err != nil {
+		return nil, err
+	}
+	for _, t := range settledTransactions {
+		res = append(res, RHTransfersResults{
+			Id:        t.Id,
+			IsDeposit: t.Direction == "credit",
+			Amount:    t.Amount.Amount,
+			Date:      t.InitiatedAt,
+		})
+	}
+	return res, nil
+}
+
+type RHBankTransfersResponse struct {
+	Next    string                   `json:"next"`
+	Results []RHBankTransfersResults `json:"results"`
+}
+
+type RHBankTransfersResults struct {
+	Id        string          `json:"id"`
+	Direction string          `json:"direction"`
+	Amount    decimal.Decimal `json:"amount"`
+	State     string          `json:"state"`
+	CreatedAt time.Time       `json:"created_at"`
+}
+
+func scrapeBankTransfers(bearerTok string) ([]RHBankTransfersResults, error) {
+	log.Print("bank transfers")
+	res := make([]RHBankTransfersResults, 0)
+	url := TransfersUrl
+	for {
+		resp, err := util.MakeGetRequest(bearerTok, url)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+		body, _ := ioutil.ReadAll(resp.Body)
+		log.Print(string(body))
+		var transfers RHBankTransfersResponse
+		err = json.Unmarshal(body, &transfers)
+		if err != nil {
+			return nil, err
+		}
+		for _, r := range transfers.Results {
+			res = append(res, r)
+		}
+		if transfers.Next == "" {
+			break
+		}
+		url = transfers.Next
+	}
+	return res, nil
+}
+
+type RHReceivedTransfersResponse struct {
+	Next    string                       `json:"next"`
+	Results []RHReceivedTransfersResults `json:"results"`
+}
+
+type RHReceivedTransfersResults struct {
+	Id        string                    `json:"id"`
+	Amount    RHReceivedTransfersAmount `json:"amount"`
+	Direction string                    `json:"direction"`
+	State     string                    `json:"state"`
+	CreatedAt time.Time                 `json:"created_at"`
+}
+
+type RHReceivedTransfersAmount struct {
+	Amount decimal.Decimal `json:"amount"`
+}
+
+func scrapeReceviedTransfers(bearerTok string) ([]RHReceivedTransfersResults, error) {
+	log.Print("received transfers")
+	res := make([]RHReceivedTransfersResults, 0)
+	url := ReceivedTransfersUrl
+	for {
+		resp, err := util.MakeGetRequest(bearerTok, url)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+		body, _ := ioutil.ReadAll(resp.Body)
+		log.Print(string(body))
+		var transfers RHReceivedTransfersResponse
+		err = json.Unmarshal(body, &transfers)
+		if err != nil {
+			return nil, err
+		}
+		for _, r := range transfers.Results {
+			res = append(res, r)
+		}
+		if transfers.Next == "" {
+			break
+		}
+		url = transfers.Next
+	}
+	return res, nil
+}
+
+type RHSettledTransactionsResponse struct {
+	Next    string                         `json:"next"`
+	Results []RHSettledTransactionsResults `json:"results"`
+}
+
+type RHSettledTransactionsResults struct {
+	Id          string                      `json:"id"`
+	Amount      RHSettledTransactionsAmount `json:"amount"`
+	Direction   string                      `json:"direction"`
+	InitiatedAt time.Time                   `json:"initiated_at"`
+}
+
+type RHSettledTransactionsAmount struct {
+	Amount decimal.Decimal `json:"amount"`
+}
+
+func scrapeSettledTransactions(bearerTok string) ([]RHSettledTransactionsResults, error) {
+	res := make([]RHSettledTransactionsResults, 0)
+	url := SettledTransactionsUrl
+	for {
+		resp, err := util.MakeGetRequest(bearerTok, url)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+		body, _ := ioutil.ReadAll(resp.Body)
+		//log.Print(string(body))
+		var transfers RHSettledTransactionsResponse
+		err = json.Unmarshal(body, &transfers)
+		if err != nil {
+			return nil, err
+		}
+		for _, r := range transfers.Results {
+			res = append(res, r)
+		}
+		if transfers.Next == "" {
+			break
+		}
+		url = transfers.Next
+	}
+	return res, nil
 }

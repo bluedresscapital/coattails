@@ -104,7 +104,7 @@ func piqConvertToHistoricalRange(stocks *piqHistoricalStocks, start time.Time, e
 		}
 		*ret = append(*ret, HistoricalStock{
 			Date:  date,
-			Price: (*stocks)[i].AdjClose,
+			Price: (*stocks)[i].Close,
 		})
 	}
 	return ret

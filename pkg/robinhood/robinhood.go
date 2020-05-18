@@ -60,7 +60,31 @@ func (api API) GetOrders() ([]wardrobe.Order, error) {
 }
 
 func (api API) GetTransfers() ([]wardrobe.Transfer, error) {
-	return nil, nil
+	bearerTok, err := api.getAuthToken()
+	if err != nil {
+		return nil, err
+	}
+	port, err := wardrobe.FetchPortfolioByRHAccountId(api.AccountId)
+	if err != nil {
+		return nil, err
+	}
+	res, err := ScrapeTransfers(*bearerTok)
+	if err != nil {
+		return nil, err
+	}
+	ret := make([]wardrobe.Transfer, 0)
+	for _, t := range res {
+		ret = append(ret, wardrobe.Transfer{
+			Uid:           t.Id,
+			PortId:        port.Id,
+			Amount:        t.Amount,
+			IsDeposit:     t.IsDeposit,
+			ManuallyAdded: false,
+			Date:          t.Date,
+		})
+
+	}
+	return ret, nil
 }
 
 func (api API) getAuthToken() (*string, error) {
