@@ -8,6 +8,10 @@ func UpsertStock(ticker string) error {
 }
 
 func FetchStockIdFromTicker(ticker string) (*int, error) {
+	err := UpsertStock(ticker)
+	if err != nil {
+		return nil, err
+	}
 	rows, err := db.Query(`SELECT id from STOCKS WHERE ticker=$1`, ticker)
 	if err != nil {
 		return nil, err
