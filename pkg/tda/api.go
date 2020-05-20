@@ -123,7 +123,6 @@ func ScrapeTransactions(authTok string, accountId string) (TDTransactions, error
 		return nil, err
 	}
 	body, _ := ioutil.ReadAll(resp.Body)
-	//log.Printf("Scraped:\n%s", string(body))
 	var orders TDTransactions
 	err = json.Unmarshal(body, &orders)
 	if err != nil {

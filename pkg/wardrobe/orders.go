@@ -1,6 +1,7 @@
 package wardrobe
 
 import (
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -35,20 +36,7 @@ func FetchOrdersByUserId(userId int) ([]Order, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-	var orders []Order
-	for rows.Next() {
-		var o Order
-		err = rows.Scan(&o.Uid, &o.PortId, &o.Stock, &o.Quantity, &o.Value, &o.IsBuy, &o.ManuallyAdded, &o.Date)
-		if err != nil {
-			return nil, err
-		}
-		orders = append(orders, o)
-	}
-	if orders == nil {
-		return make([]Order, 0), nil
-	}
-	return orders, nil
+	return _parseRowOrders(rows)
 }
 
 // TODO refactor this with function above, sharing a ton of similar code
@@ -62,11 +50,28 @@ func FetchOrdersByPortfolioId(portId int) ([]Order, error) {
 	if err != nil {
 		return nil, err
 	}
+	return _parseRowOrders(rows)
+}
+
+func FetchZeroPriceOrdersByPortfolioId(portId int) ([]Order, error) {
+	rows, err := db.Query(`
+		SELECT o.uid, o.port_id, s.ticker, o.quantity, o.value, o.is_buy, o.manually_added, o.date
+		FROM orders o
+		JOIN stocks s ON s.id=o.stock_id
+		WHERE o.port_id=$1 AND o.value = 0
+		ORDER BY o.date`, portId)
+	if err != nil {
+		return nil, err
+	}
+	return _parseRowOrders(rows)
+}
+
+func _parseRowOrders(rows *sql.Rows) ([]Order, error) {
 	defer rows.Close()
 	var orders []Order
 	for rows.Next() {
 		var o Order
-		err = rows.Scan(&o.Uid, &o.PortId, &o.Stock, &o.Quantity, &o.Value, &o.IsBuy, &o.ManuallyAdded, &o.Date)
+		err := rows.Scan(&o.Uid, &o.PortId, &o.Stock, &o.Quantity, &o.Value, &o.IsBuy, &o.ManuallyAdded, &o.Date)
 		if err != nil {
 			return nil, err
 		}

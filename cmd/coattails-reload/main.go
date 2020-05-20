@@ -31,7 +31,6 @@ var (
 	pgPwd              string
 	pgDb               string
 	cacheHost          string
-	debugNoDeps        bool
 	loadBdcKeyFromFile bool
 	bdcKeyFile         string
 )
@@ -91,7 +90,6 @@ func main() {
 	flag.StringVar(&pgPwd, "pg-pwd", "bdc", "postgresql password")
 	flag.StringVar(&pgDb, "pg-db", "wardrobe", "postgresql db")
 	flag.StringVar(&cacheHost, "redis-host", "localhost", "redis host")
-	flag.BoolVar(&debugNoDeps, "run-without-deps", false, "debug setting")
 	flag.BoolVar(&loadBdcKeyFromFile, "load-bdc-key-from-file", false, "flag for whether or not we should get bdc key from file")
 	flag.StringVar(&bdcKeyFile, "bdc-key-file", "", "file location of bdc-key. Required if load-bdc-key-from-file is set")
 	flag.Parse()

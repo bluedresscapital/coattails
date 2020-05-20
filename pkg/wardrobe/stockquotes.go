@@ -10,11 +10,32 @@ import (
 )
 
 type StockQuote struct {
-	Stock       string          `json:"stock"`
-	Price       decimal.Decimal `json:"price"`
-	Date        time.Time       `json:"date"`
-	IsValidDate bool            `json:"is_valid_date"`
+	Stock string          `json:"stock"`
+	Price decimal.Decimal `json:"price"`
+	Date  time.Time       `json:"date"`
 }
+
+func UpsertStockQuotePrice(ticker string, date time.Time, price decimal.Decimal) error {
+	id, err := FetchStockIdFromTicker(ticker)
+	if err != nil {
+		return err
+	}
+	_, err = db.Exec(`
+		INSERT INTO stock_quotes (stock_id, price, date)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (stock_id, date) DO UPDATE
+		SET price=$2`, *id, price, date)
+	return err
+}
+
+//func FetchStaleStockQuotes() {
+//	rows, err := db.Query(`
+//		SELECT s.ticker
+//		FROM stock_quotes q
+//		JOIN stocks s ON s.id=q.stock_id
+//		WHERE
+//	`)
+//}
 
 func BatchUpsertStockQuotes(quotes []StockQuote) error {
 	if len(quotes) == 0 {
@@ -35,12 +56,12 @@ func BatchUpsertStockQuotes(quotes []StockQuote) error {
 		txn.Rollback()
 		return err
 	}
-	stmt, _ := txn.Prepare(pq.CopyIn("stock_quotes", "stock_id", "price", "date", "is_valid_date"))
+	stmt, _ := txn.Prepare(pq.CopyIn("stock_quotes", "stock_id", "price", "date"))
 	if err != nil {
 		return err
 	}
 	for _, q := range quotes {
-		_, err = stmt.Exec(*id, q.Price, q.Date, q.IsValidDate)
+		_, err = stmt.Exec(*id, q.Price, q.Date)
 		if err != nil {
 			return err
 		}
@@ -83,7 +104,7 @@ func FetchStockQuoteCount(ticker string, start time.Time, end time.Time) (*int, 
 
 func FetchStockQuotes(ticker string, start time.Time, end time.Time) ([]StockQuote, error) {
 	rows, err := db.Query(`
-		SELECT s.ticker, q.price, q.date, q.is_valid_date 
+		SELECT s.ticker, q.price, q.date
 		FROM stock_quotes q
 		JOIN stocks s ON s.id=q.stock_id
 		WHERE s.ticker=$1 AND q.date>=$2 AND q.date <=$3
@@ -95,7 +116,7 @@ func FetchStockQuotes(ticker string, start time.Time, end time.Time) ([]StockQuo
 	ret := make([]StockQuote, 0)
 	for rows.Next() {
 		var sq StockQuote
-		err = rows.Scan(&sq.Stock, &sq.Price, &sq.Date, &sq.IsValidDate)
+		err = rows.Scan(&sq.Stock, &sq.Price, &sq.Date)
 		ret = append(ret, sq)
 	}
 	return ret, err

@@ -40,14 +40,14 @@ type HistoricalStocks []HistoricalStock
 
 func GetHistoricalPrice(api StockAPI, ticker string, date time.Time) (*decimal.Decimal, error) {
 	date = util.GetTimelessDate(date)
-	hist, err := GetHistoricalRange(api, ticker, date.AddDate(0, 0, -5), date)
+	hist, err := GetHistoricalRange(api, ticker, date, date)
 	if err != nil {
 		return nil, err
 	}
-	if len(*hist) == 0 {
-		return nil, fmt.Errorf("empty history for stock %s and date %v", ticker, date)
+	if len(*hist) != 1 || !(*hist)[0].Date.Equal(date) {
+		return nil, fmt.Errorf("invalid history: %v for %s on %s", *hist, ticker, date)
 	}
-	price := (*hist)[len(*hist)-1].Price
+	price := (*hist)[0].Price
 	return &price, nil
 }
 
@@ -59,6 +59,10 @@ func GetCurrentPrice(api StockAPI, ticker string) (*decimal.Decimal, error) {
 func GetHistoricalRange(api StockAPI, ticker string, start time.Time, end time.Time) (*HistoricalStocks, error) {
 	if start.After(end) {
 		return nil, fmt.Errorf("start date (%s) is after end (%s)", start, end)
+	}
+	now := time.Now()
+	if start.After(now) || end.After(now) {
+		return nil, fmt.Errorf("start %s or end %s is after now %s, which is invalid", start, end, now)
 	}
 	start = util.GetTimelessDate(start)
 	end = util.GetTimelessDate(end)
@@ -96,10 +100,9 @@ func GetHistoricalRange(api StockAPI, ticker string, start time.Time, end time.T
 	quotes := make([]wardrobe.StockQuote, 0)
 	for _, s := range *stocksP {
 		quotes = append(quotes, wardrobe.StockQuote{
-			Stock:       ticker,
-			Price:       s.Price,
-			Date:        s.Date,
-			IsValidDate: true,
+			Stock: ticker,
+			Price: s.Price,
+			Date:  s.Date,
 		})
 	}
 	log.Printf("Bulk inserting stock quotes...")

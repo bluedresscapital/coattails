@@ -81,3 +81,26 @@ func DeletePositions(portId int) error {
 	_, err := db.Exec(`DELETE FROM positions WHERE port_id=$1`, portId)
 	return err
 }
+
+func FetchNonZeroQuantityPositions() ([]string, error) {
+	rows, err := db.Query(`
+		SELECT s.ticker 
+		FROM positions p 
+		JOIN stocks s ON p.stock_id=s.id
+		WHERE p.quantity != 0
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	tickers := make([]string, 0)
+	for rows.Next() {
+		var t string
+		err = rows.Scan(&t)
+		if err != nil {
+			return nil, err
+		}
+		tickers = append(tickers, t)
+	}
+	return tickers, nil
+}

@@ -11,4 +11,5 @@ WORKDIR /go/src/github.com/bluedresscapital/coattails
 
 RUN go build -o coattails ./cmd/coattails/main.go
 RUN go build -o coattails-reload ./cmd/coattails-reload/main.go
+RUN go build -o stock-reload ./cmd/stock-reload/main.go
 
