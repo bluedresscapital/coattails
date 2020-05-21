@@ -69,14 +69,13 @@ func fetchPortfolioHistoryHandler(userId *int, w http.ResponseWriter, r *http.Re
 	if err != nil {
 		log.Printf("Error fetching portfolios: %v", err)
 	}
-	perfMap := make(map[int][]portfolios.PortPerformance)
+	perfMap := make(map[int][]wardrobe.PortValue)
 	for _, portfolio := range ps {
 		pvs, err := wardrobe.FetchPortfolioValuesByPortId(portfolio.Id)
 		if err != nil {
 			log.Printf("Error fetching portfolio values: %v", err)
 		}
-		perf := portfolios.ComputePortfolioPerformance(pvs)
-		perfMap[portfolio.Id] = perf
+		perfMap[portfolio.Id] = pvs
 	}
 	writeJsonResponse(w, perfMap)
 }

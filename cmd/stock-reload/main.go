@@ -73,9 +73,21 @@ L:
 		log.Fatalf("error loading EST location: %v", err)
 	}
 	now := time.Now().In(est)
+	// Only check if we have a stale price after 10am EST. The reason for the 10am check is we assume
+	// w/e stock api we use will have all prices up to including the previous day for any given stock after 10am.
 	if now.Hour() > 10 {
 		log.Print("TODO: Updating past day prices that aren't set yet")
+		// 1. Fetch all stock tickers that have a stale stock quote, aka
+		// 		- quotes with a date d that haven't been updated since before d+1 AND now-d > 1
+		// 2. If there are multiple stock quotes for the same ticker, compute min and max range, and upsert those
+		// stock prices.
+		// 		- think carefully about this one, we don't want to break our invariant and constantly upsert stock prices
+
+		// Reload positions + publish
+		// Reload portfolio performances + publish
 	}
+
+	// Upsert portfolio values
 }
 
 func removeTickerDuplicates(tickers []string) []string {

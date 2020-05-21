@@ -45,7 +45,7 @@ func BdcDecrypt(d []byte) (*string, error) {
 	nonce, ciphertext := d[:nonceSize], d[nonceSize:]
 	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
-		panic(err.Error())
+		return nil, err
 	}
 	res := new(string)
 	*res = string(plaintext)

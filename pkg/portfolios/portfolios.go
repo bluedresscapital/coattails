@@ -35,13 +35,8 @@ func ReloadHistory(portfolio wardrobe.Portfolio) error {
 	portSnapshots := getPortfolioSnapshots(orders, transfers, dates)
 	// Computes portfolio values (cash, stock_values, daily_net_deposited) per day
 	portValues := computePortValues(dates, portSnapshots, portfolio.Id)
-	for _, pv := range portValues {
-		err = wardrobe.UpsertPortfolioValue(pv)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+
+	return wardrobe.BulkUpsertPortfolioValuesByPortId(portValues, portfolio.Id)
 }
 
 type PortPerformance struct {
@@ -52,41 +47,28 @@ type PortPerformance struct {
 	NormPortTotal decimal.Decimal `json:"norm_port_total"`
 }
 
-func ComputePortfolioPerformance(pvs []wardrobe.PortValue) []PortPerformance {
-	portPerfs := make([]PortPerformance, len(pvs))
-	cumPerf := decimal.New(1, 0)
-	log.Println("Computing port performance...")
+func computePortfolioPerformance(pvs []wardrobe.PortValue) {
+	log.Printf("Compute portfolio performance..")
+	cumPerf := decimal.NewFromInt(1)
 	for i, pv := range pvs {
+		log.Printf("computing %d / %d", i+1, len(pvs))
 		if i == 0 {
-			portPerfs[i] = PortPerformance{
-				Date:          pv.Date,
-				DailyChange:   decimal.NewFromInt(1),
-				CumChange:     decimal.NewFromInt(1),
-				PortTotal:     pv.StockValue.Add(pv.Cash),
-				NormPortTotal: pv.StockValue.Add(pv.NormalizedCash),
-			}
+			pvs[i].DailyChange = decimal.NewFromInt(1)
 		} else {
 			prevPv := pvs[i-1]
 			currVal := pv.Cash.Add(pv.StockValue).Sub(pv.DailyNetDeposited)
 			prevVal := prevPv.Cash.Add(prevPv.StockValue)
 			perf := currVal.Div(prevVal)
 			cumPerf = cumPerf.Mul(perf)
-			portPerfs[i] = PortPerformance{
-				Date:          pv.Date,
-				DailyChange:   perf.Truncate(4),
-				CumChange:     cumPerf.Truncate(4),
-				PortTotal:     pv.StockValue.Add(pv.Cash),
-				NormPortTotal: pv.StockValue.Add(pv.NormalizedCash),
-			}
+			pvs[i].DailyChange = perf
 		}
+		pvs[i].CumChange = cumPerf
 		// Don't remove this until we're sure our portfolio history is bullet proof!
 		//log.Printf("[%s] cum: %s, change: %s, total: %s, cash: %s, stock_value: %s, net_deposited: %s", pv.Date, portPerfs[i].CumChange, portPerfs[i].DailyChange, pv.Cash.Add(pv.StockValue), pv.Cash, pv.StockValue, pv.DailyNetDeposited)
 	}
-	log.Println("Done computing port performance!")
-	return portPerfs
 }
 
-func computePortValues(dates []time.Time, snapshots portSnapshots, portId int) map[time.Time]wardrobe.PortValue {
+func computePortValues(dates []time.Time, snapshots portSnapshots, portId int) []wardrobe.PortValue {
 	portValues := make(map[time.Time]wardrobe.PortValue)
 	for date := range snapshots {
 		portValues[date] = wardrobe.PortValue{
@@ -96,6 +78,8 @@ func computePortValues(dates []time.Time, snapshots portSnapshots, portId int) m
 			DailyNetDeposited: snapshots[date][DAILY_NET_DEPOSITED],
 			Cash:              snapshots[date][CASH],
 			StockValue:        decimal.Zero,
+			CumChange:         decimal.Zero,
+			DailyChange:       decimal.Zero,
 		}
 	}
 	// Get the date ranges in which the user owned the stock
@@ -128,7 +112,18 @@ func computePortValues(dates []time.Time, snapshots portSnapshots, portId int) m
 			portValues[price.Date] = portValue
 		}
 	}
-	return portValues
+	log.Printf("DONE computing port cash and stock values")
+
+	pvs := make([]wardrobe.PortValue, 0)
+	for _, d := range dates {
+		pv, found := portValues[d]
+		if found {
+			pvs = append(pvs, pv)
+		}
+	}
+	// WARNING: destructively modifies pvs to also include performance.
+	computePortfolioPerformance(pvs)
+	return pvs
 }
 
 type dateRange struct {

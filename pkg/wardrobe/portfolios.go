@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/lib/pq"
+
 	"github.com/shopspring/decimal"
 )
 
@@ -124,27 +126,69 @@ func FetchPortfoliosByUserId(userId int) ([]Portfolio, error) {
 }
 
 type PortValue struct {
-	PortId            int
-	Date              time.Time
-	DailyNetDeposited decimal.Decimal
-	Cash              decimal.Decimal
-	StockValue        decimal.Decimal
-	NormalizedCash    decimal.Decimal
+	PortId            int             `json:"port_id"`
+	Date              time.Time       `json:"date"`
+	DailyNetDeposited decimal.Decimal `json:"daily_net_deposited"`
+	Cash              decimal.Decimal `json:"cash"`
+	StockValue        decimal.Decimal `json:"stock_value"`
+	NormalizedCash    decimal.Decimal `json:"normalized_cash"`
+	CumChange         decimal.Decimal `json:"cum_change"`
+	DailyChange       decimal.Decimal `json:"daily_change"`
+}
+
+func BulkUpsertPortfolioValuesByPortId(pvs []PortValue, portId int) error {
+	if len(pvs) == 0 {
+		return nil
+	}
+	txn, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	start := pvs[0].Date
+	end := pvs[len(pvs)-1].Date
+	_, err = txn.Exec(`DELETE FROM portfolio_values WHERE port_id =$1 AND date >= $2 AND date <= $3`, portId, start, end)
+	if err != nil {
+		txn.Rollback()
+		return err
+	}
+	stmt, _ := txn.Prepare(pq.CopyIn("portfolio_values", "port_id", "cash", "stock_value", "daily_net_deposited", "normalized_cash", "date", "cum_change", "daily_change"))
+	if err != nil {
+		return err
+	}
+	for _, pv := range pvs {
+		_, err = stmt.Exec(pv.PortId, pv.Cash, pv.StockValue, pv.DailyNetDeposited, pv.NormalizedCash, pv.Date, pv.CumChange, pv.DailyChange)
+		if err != nil {
+			return err
+		}
+	}
+	_, err = stmt.Exec()
+	if err != nil {
+		return err
+	}
+	err = stmt.Close()
+	if err != nil {
+		return err
+	}
+	err = txn.Commit()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func UpsertPortfolioValue(pv PortValue) error {
 	_, err := db.Exec(`
-		INSERT INTO portfolio_values (port_id, cash, stock_value, daily_net_deposited, normalized_cash, date)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO portfolio_values (port_id, cash, stock_value, daily_net_deposited, normalized_cash, date, cum_change, daily_change)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		ON CONFLICT (port_id, date) DO UPDATE
-		SET cash=$2, stock_value=$3, daily_net_deposited=$4, normalized_cash=$5`,
-		pv.PortId, pv.Cash, pv.StockValue, pv.DailyNetDeposited, pv.NormalizedCash, pv.Date)
+		SET cash=$2, stock_value=$3, daily_net_deposited=$4, normalized_cash=$5, cum_change=$7, daily_change=$8`,
+		pv.PortId, pv.Cash, pv.StockValue, pv.DailyNetDeposited, pv.NormalizedCash, pv.Date, pv.CumChange, pv.DailyChange)
 	return err
 }
 
 func FetchPortfolioValuesByPortId(portId int) ([]PortValue, error) {
 	rows, err := db.Query(`
-		SELECT port_id, cash, stock_value, daily_net_deposited, normalized_cash, date
+		SELECT port_id, cash, stock_value, daily_net_deposited, normalized_cash, date, cum_change, daily_change
 		FROM portfolio_values
 		WHERE port_id=$1
 		ORDER BY date`, portId)
@@ -155,7 +199,7 @@ func FetchPortfolioValuesByPortId(portId int) ([]PortValue, error) {
 	pvs := make([]PortValue, 0)
 	for rows.Next() {
 		var pv PortValue
-		err = rows.Scan(&pv.PortId, &pv.Cash, &pv.StockValue, &pv.DailyNetDeposited, &pv.NormalizedCash, &pv.Date)
+		err = rows.Scan(&pv.PortId, &pv.Cash, &pv.StockValue, &pv.DailyNetDeposited, &pv.NormalizedCash, &pv.Date, &pv.CumChange, &pv.DailyChange)
 		if err != nil {
 			return nil, err
 		}
