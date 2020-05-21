@@ -33,9 +33,8 @@ func ReloadHistory(portfolio wardrobe.Portfolio) error {
 	dates := util.GetMarketDates(start, time.Now())
 	// Computes portfolio (mapping of stock to quantity) snapshot per day
 	portSnapshots := getPortfolioSnapshots(orders, transfers, dates)
-	// Computes portfolio values (cash, stock_values, daily_net_deposited) per day
+	// Computes portfolio values (cash, stock_values, daily_net_deposited, cum_change, daily_change) per day
 	portValues := computePortValues(dates, portSnapshots, portfolio.Id)
-
 	log.Printf("Bulk upserting portfolio values...")
 	err = wardrobe.BulkUpsertPortfolioValuesByPortId(portValues, portfolio.Id)
 	log.Printf("Done bulk upserting!")
@@ -125,7 +124,14 @@ func computePortfolioPerformance(pvs []wardrobe.PortValue) {
 		}
 		pvs[i].CumChange = cumPerf
 		// Don't remove this until we're sure our portfolio history is bullet proof!
-		log.Printf("[%s] cum: %s, change: %s, total: %s, cash: %s, stock_value: %s, net_deposited: %s", pv.Date, pv.CumChange, pv.DailyChange, pv.Cash.Add(pv.StockValue), pv.Cash, pv.StockValue, pv.DailyNetDeposited)
+		log.Printf("[%s] cum: %s, change: %s, total: %s, cash: %s, stock_value: %s, net_deposited: %s",
+			pv.Date,
+			pvs[i].CumChange,
+			pvs[i].DailyChange,
+			pv.Cash.Add(pv.StockValue),
+			pv.Cash,
+			pv.StockValue,
+			pv.DailyNetDeposited)
 	}
 }
 

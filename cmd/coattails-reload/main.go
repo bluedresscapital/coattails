@@ -48,33 +48,47 @@ func reloadPortfolios() {
 		}
 		var orderAPI orders.OrderAPI
 		var transferAPI transfers.TransferAPI
+		var needsOrderReload bool
+		var needsTransferReload bool
 		if port.Type == "tda" {
 			orderAPI = tda.API{AccountId: port.TDAccountId}
 			transferAPI = tda.API{AccountId: port.TDAccountId}
 		} else if port.Type == "rh" {
 			orderAPI = robinhood.API{AccountId: port.RHAccountId}
 			transferAPI = robinhood.API{AccountId: port.RHAccountId}
+		} else {
+			// Just check if we have uncommitted transfers or orders
+			needsOrderReload, err = wardrobe.HasUncommittedOrders(port.Id)
+			if err != nil {
+				log.Fatalf("error checking for uncommitted orders: %v", err)
+			}
+			needsTransferReload, err = wardrobe.HasUncommittedTransfers(port.Id)
+			if err != nil {
+				log.Fatalf("error checking for uncommitted transfers: %v", err)
+			}
 		}
-		if orderAPI != nil && transferAPI != nil {
-			needsOrderReload, err := orders.ReloadOrders(orderAPI, stockings.FingoPack{})
+		if orderAPI != nil {
+			needsOrderReload, err = orders.ReloadOrders(orderAPI, stockings.FingoPack{})
 			if err != nil {
 				log.Fatalf("error reloading orders: %v", err)
 			}
-			depsChanged := make([]diapers.Data, 0)
-			if needsOrderReload {
-				depsChanged = append(depsChanged, diapers.Order)
-			}
-			needsTransferReload, err := transfers.ReloadTransfers(transferAPI)
+		}
+		if transferAPI != nil {
+			needsTransferReload, err = transfers.ReloadTransfers(transferAPI)
 			if err != nil {
 				log.Fatalf("error reloading transfers: %v", err)
 			}
-			if needsTransferReload {
-				depsChanged = append(depsChanged, diapers.Transfer)
-			}
-			err = diapers.BulkReloadDepsAndPublish(depsChanged, port.Id, port.UserId, routes.GetChannelFromUserId(port.UserId))
-			if err != nil {
-				log.Fatalf("error reloading deps for %v: %v", depsChanged, err)
-			}
+		}
+		depsChanged := make([]diapers.Data, 0)
+		if needsOrderReload {
+			depsChanged = append(depsChanged, diapers.Order)
+		}
+		if needsTransferReload {
+			depsChanged = append(depsChanged, diapers.Transfer)
+		}
+		err = diapers.BulkReloadDepsAndPublish(depsChanged, port.Id, port.UserId, routes.GetChannelFromUserId(port.UserId))
+		if err != nil {
+			log.Fatalf("error reloading deps for %v: %v", depsChanged, err)
 		}
 	}
 }
