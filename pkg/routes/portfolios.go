@@ -5,6 +5,8 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/bluedresscapital/coattails/pkg/util"
+
 	"github.com/bluedresscapital/coattails/pkg/portfolios"
 
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
@@ -18,12 +20,42 @@ func registerPortfolioRoutes(r *mux.Router) {
 	s.HandleFunc("", authMiddleware(fetchPortfoliosHandler)).Methods("GET")
 	s.HandleFunc("/create", authMiddleware(createPortfolioHandler)).Methods("POST")
 	s.HandleFunc("/history", authMiddleware(fetchPortfolioHistoryHandler)).Methods("GET")
+	s.HandleFunc("/values", authMiddleware(fetchPortfolioValuesHandler)).Methods("GET")
 	s.HandleFunc("/history/reload", portAuthMiddleware(reloadPortfolioHistoryHandler)).Methods("POST")
 }
 
 type CreatePortfolioRequest struct {
 	Name string `json:"name"`
 	Type string `json:"type"`
+}
+
+func fetchPortfolioValuesHandler(userId *int, w http.ResponseWriter, r *http.Request) {
+	ports, err := wardrobe.FetchPortfoliosByUserId(*userId)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	now := util.GetESTNow()
+	res := make(map[int]portfolios.PortValueDiff)
+	// TODO - look into fixing edge case where portfolio values len is < 2??
+	for _, port := range ports {
+		currPv, err := wardrobe.FetchPortfolioValueOnDay(port.Id, now)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		prevPv, err := wardrobe.FetchPortfolioValueOnDay(port.Id, now.AddDate(0, 0, -1))
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		res[port.Id] = portfolios.PortValueDiff{
+			CurrVal:     currPv.StockValue.Add(currPv.Cash),
+			PrevVal:     prevPv.StockValue.Add(prevPv.Cash),
+			DailyChange: currPv.DailyChange,
+		}
+	}
+	writeJsonResponse(w, res)
 }
 
 func fetchPortfoliosHandler(userId *int, w http.ResponseWriter, r *http.Request) {

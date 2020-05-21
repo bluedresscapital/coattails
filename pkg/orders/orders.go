@@ -42,6 +42,9 @@ func ReloadOrders(order OrderAPI, stock stockings.StockAPI) (bool, error) {
 				if err != nil {
 					return false, fmt.Errorf("unable to get a price for stock %s at date %s: %v", o.Stock, o.Date, err)
 				}
+				if (*price).IsZero() {
+					return false, fmt.Errorf("price for %s on %s is still 0, erroring out", o.Stock, o.Date)
+				}
 				o.Value = *price
 				// Treat transferred assets as a simple deposit of $(price), and then buying the asset at $(price).
 				t := wardrobe.Transfer{
@@ -55,6 +58,10 @@ func ReloadOrders(order OrderAPI, stock stockings.StockAPI) (bool, error) {
 				err = wardrobe.InsertIgnoreTransfer(t)
 				if err != nil {
 					log.Printf("Error upserting transfer: %v, not erroring out tho", err)
+				}
+				err = wardrobe.UpsertOrder(o)
+				if err != nil {
+					log.Printf("Error upserting order: %v", err)
 				}
 			}
 		}

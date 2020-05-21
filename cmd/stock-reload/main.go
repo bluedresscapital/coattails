@@ -6,6 +6,9 @@ import (
 	"log"
 	"time"
 
+	"github.com/bluedresscapital/coattails/pkg/routes"
+	"github.com/bluedresscapital/coattails/pkg/socks"
+
 	"github.com/bluedresscapital/coattails/pkg/portfolios"
 
 	"github.com/bluedresscapital/coattails/pkg/util"
@@ -88,7 +91,6 @@ L:
 		// Reload positions + publish
 		// Reload portfolio performances + publish
 	}
-
 	// Upsert portfolio values
 	ports, err := wardrobe.FetchAllPortfolioIds()
 	if err != nil {
@@ -99,9 +101,15 @@ L:
 		if err != nil {
 			log.Fatalf("error fetching portfolio %d: %v", portId, err)
 		}
-		err = portfolios.ReloadCurrentDay(*port)
+		pv, err := portfolios.ReloadCurrentDay(*port)
 		if err != nil {
 			log.Fatalf("error reloading current day portfolio: %v", err)
+		}
+		res := make(map[int]portfolios.PortValueDiff)
+		res[portId] = *pv
+		err = socks.PublishFromServer(routes.GetChannelFromUserId(port.UserId), "RELOAD_CURRENT_PORT_VALUES", res)
+		if err != nil {
+			log.Fatalf("error publishing current port values: %v", err)
 		}
 	}
 }

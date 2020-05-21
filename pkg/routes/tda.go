@@ -70,7 +70,7 @@ func createTDPortfolioHandler(userId *int, w http.ResponseWriter, r *http.Reques
 func validateTdaUsage(port wardrobe.Portfolio, userId int) error {
 	auth, err := wardrobe.FetchTDAccount(port.TDAccountId)
 	if err != nil {
-		return fmt.Errorf("unable to fetch td account %d", port.TDAccountId)
+		return fmt.Errorf("unable to fetch td account %d: %v", port.TDAccountId, err)
 	}
 	if auth.UserId != userId {
 		return fmt.Errorf("unauthorized access of td account %d by user %d", auth.Id, userId)

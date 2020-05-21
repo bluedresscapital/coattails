@@ -4,6 +4,11 @@ import (
 	"time"
 )
 
+func GetESTNow() time.Time {
+	est, _ := time.LoadLocation("EST")
+	return GetTimelessDate(time.Now().In(est))
+}
+
 func IsMarketOpen(date time.Time) bool {
 	return int(date.Weekday()) != 0 && int(date.Weekday()) != 6
 }

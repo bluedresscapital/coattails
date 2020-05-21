@@ -72,7 +72,7 @@ func GetHistoricalRange(api StockAPI, ticker string, start time.Time, end time.T
 		return nil, err
 	}
 	if days == *count {
-		log.Printf("Fetching stock quotes from db...")
+		log.Printf("Fetching %s quotes from db", ticker)
 		sq, err := wardrobe.FetchStockQuotes(ticker, start, end)
 		if err != nil {
 			return nil, err
@@ -86,7 +86,7 @@ func GetHistoricalRange(api StockAPI, ticker string, start time.Time, end time.T
 		}
 		return ret, nil
 	}
-	log.Printf("We only have %d/%d stock quotes, fetching stock quotes from api...", days, *count)
+	log.Printf("We only have %d/%d stock quotes, fetching %s quotes from api...", *count, days, ticker)
 	stocksP, err := api.GetHistoricalRange(ticker, start, end)
 	if err != nil {
 		return nil, fmt.Errorf("errored out from stock api's get historical range: %v", err)

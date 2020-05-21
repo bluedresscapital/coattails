@@ -42,36 +42,38 @@ func ReloadHistory(portfolio wardrobe.Portfolio) error {
 	return err
 }
 
+type PortValueDiff struct {
+	CurrVal     decimal.Decimal `json:"curr_val"`
+	PrevVal     decimal.Decimal `json:"prev_val"`
+	DailyChange decimal.Decimal `json:"daily_change"`
+}
+
 // Basically calculates stock value for current day, then daily_change and cum_change
 // Assume no changes in cash, otherwise we'd be reloading entire portfolio history due to new transfer
-func ReloadCurrentDay(portfolio wardrobe.Portfolio) error {
+func ReloadCurrentDay(portfolio wardrobe.Portfolio) (*PortValueDiff, error) {
 	log.Printf("Reloading current day portfolio for %d", portfolio.Id)
 	positions, err := wardrobe.FetchPortfolioPositions(portfolio.Id)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	stockVal := decimal.Zero
 	for _, p := range positions {
 		if !p.Quantity.IsZero() && p.Stock != CASH {
 			stockPrice, err := stockings.GetCurrentPrice(stockings.FingoPack{}, p.Stock)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			stockVal = stockVal.Add(stockPrice.Mul(p.Quantity))
 		}
 	}
-	est, err := time.LoadLocation("EST")
-	if err != nil {
-		log.Fatalf("error loading EST location: %v", err)
-	}
-	now := util.GetTimelessDate(time.Now().In(est))
+	now := util.GetESTNow()
 	currPv, err := wardrobe.FetchPortfolioValueOnDay(portfolio.Id, now)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	prevPv, err := wardrobe.FetchPortfolioValueOnDay(portfolio.Id, now.AddDate(0, 0, -1))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	currVal := currPv.Cash.Add(stockVal).Sub(currPv.DailyNetDeposited)
 	prevVal := prevPv.Cash.Add(prevPv.StockValue)
@@ -87,7 +89,15 @@ func ReloadCurrentDay(portfolio wardrobe.Portfolio) error {
 		CumChange:         cumChange,
 		DailyChange:       dailyChange,
 	}
-	return wardrobe.UpsertPortfolioValue(newPv)
+	err = wardrobe.UpsertPortfolioValue(newPv)
+	if err != nil {
+		return nil, err
+	}
+	return &PortValueDiff{
+		CurrVal:     currVal,
+		PrevVal:     prevVal,
+		DailyChange: dailyChange,
+	}, nil
 }
 
 type PortPerformance struct {
@@ -115,7 +125,7 @@ func computePortfolioPerformance(pvs []wardrobe.PortValue) {
 		}
 		pvs[i].CumChange = cumPerf
 		// Don't remove this until we're sure our portfolio history is bullet proof!
-		//log.Printf("[%s] cum: %s, change: %s, total: %s, cash: %s, stock_value: %s, net_deposited: %s", pv.Date, portPerfs[i].CumChange, portPerfs[i].DailyChange, pv.Cash.Add(pv.StockValue), pv.Cash, pv.StockValue, pv.DailyNetDeposited)
+		log.Printf("[%s] cum: %s, change: %s, total: %s, cash: %s, stock_value: %s, net_deposited: %s", pv.Date, pv.CumChange, pv.DailyChange, pv.Cash.Add(pv.StockValue), pv.Cash, pv.StockValue, pv.DailyNetDeposited)
 	}
 }
 
