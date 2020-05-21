@@ -36,7 +36,58 @@ func ReloadHistory(portfolio wardrobe.Portfolio) error {
 	// Computes portfolio values (cash, stock_values, daily_net_deposited) per day
 	portValues := computePortValues(dates, portSnapshots, portfolio.Id)
 
-	return wardrobe.BulkUpsertPortfolioValuesByPortId(portValues, portfolio.Id)
+	log.Printf("Bulk upserting portfolio values...")
+	err = wardrobe.BulkUpsertPortfolioValuesByPortId(portValues, portfolio.Id)
+	log.Printf("Done bulk upserting!")
+	return err
+}
+
+// Basically calculates stock value for current day, then daily_change and cum_change
+// Assume no changes in cash, otherwise we'd be reloading entire portfolio history due to new transfer
+func ReloadCurrentDay(portfolio wardrobe.Portfolio) error {
+	log.Printf("Reloading current day portfolio for %d", portfolio.Id)
+	positions, err := wardrobe.FetchPortfolioPositions(portfolio.Id)
+	if err != nil {
+		return err
+	}
+	stockVal := decimal.Zero
+	for _, p := range positions {
+		if !p.Quantity.IsZero() && p.Stock != CASH {
+			stockPrice, err := stockings.GetCurrentPrice(stockings.FingoPack{}, p.Stock)
+			if err != nil {
+				return err
+			}
+			stockVal = stockVal.Add(stockPrice.Mul(p.Quantity))
+		}
+	}
+	est, err := time.LoadLocation("EST")
+	if err != nil {
+		log.Fatalf("error loading EST location: %v", err)
+	}
+	now := util.GetTimelessDate(time.Now().In(est))
+	currPv, err := wardrobe.FetchPortfolioValueOnDay(portfolio.Id, now)
+	if err != nil {
+		return err
+	}
+	prevPv, err := wardrobe.FetchPortfolioValueOnDay(portfolio.Id, now.AddDate(0, 0, -1))
+	if err != nil {
+		return err
+	}
+	currVal := currPv.Cash.Add(stockVal).Sub(currPv.DailyNetDeposited)
+	prevVal := prevPv.Cash.Add(prevPv.StockValue)
+	dailyChange := currVal.Div(prevVal)
+	cumChange := prevPv.CumChange.Mul(dailyChange)
+	newPv := wardrobe.PortValue{
+		PortId:            portfolio.Id,
+		Date:              currPv.Date,
+		DailyNetDeposited: currPv.DailyNetDeposited,
+		Cash:              currPv.Cash,
+		StockValue:        stockVal,
+		NormalizedCash:    currPv.NormalizedCash,
+		CumChange:         cumChange,
+		DailyChange:       dailyChange,
+	}
+	return wardrobe.UpsertPortfolioValue(newPv)
 }
 
 type PortPerformance struct {

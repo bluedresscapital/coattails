@@ -6,6 +6,8 @@ import (
 	"log"
 	"time"
 
+	"github.com/bluedresscapital/coattails/pkg/portfolios"
+
 	"github.com/bluedresscapital/coattails/pkg/util"
 
 	"github.com/bluedresscapital/coattails/pkg/stockings"
@@ -88,6 +90,20 @@ L:
 	}
 
 	// Upsert portfolio values
+	ports, err := wardrobe.FetchAllPortfolioIds()
+	if err != nil {
+		log.Fatalf("error fetching portfolio ids: %v", err)
+	}
+	for _, portId := range ports {
+		port, err := wardrobe.FetchPortfolioById(portId)
+		if err != nil {
+			log.Fatalf("error fetching portfolio %d: %v", portId, err)
+		}
+		err = portfolios.ReloadCurrentDay(*port)
+		if err != nil {
+			log.Fatalf("error reloading current day portfolio: %v", err)
+		}
+	}
 }
 
 func removeTickerDuplicates(tickers []string) []string {

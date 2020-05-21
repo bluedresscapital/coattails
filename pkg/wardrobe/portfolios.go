@@ -208,6 +208,26 @@ func FetchPortfolioValuesByPortId(portId int) ([]PortValue, error) {
 	return pvs, nil
 }
 
+func FetchPortfolioValueOnDay(portId int, date time.Time) (*PortValue, error) {
+	rows, err := db.Query(`
+		SELECT port_id, cash, stock_value, daily_net_deposited, normalized_cash, date, cum_change, daily_change
+		FROM portfolio_values
+		WHERE port_id=$1 AND date=$2`, portId, date)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	if !rows.Next() {
+		return nil, fmt.Errorf("no portfolio value found for port %d on %s", portId, date)
+	}
+	var pv PortValue
+	err = rows.Scan(&pv.PortId, &pv.Cash, &pv.StockValue, &pv.DailyNetDeposited, &pv.NormalizedCash, &pv.Date, &pv.CumChange, &pv.DailyChange)
+	if err != nil {
+		return nil, err
+	}
+	return &pv, nil
+}
+
 func FetchAllPortfolioIds() ([]int, error) {
 	rows, err := db.Query(`SELECT id FROM portfolios`)
 	if err != nil {
