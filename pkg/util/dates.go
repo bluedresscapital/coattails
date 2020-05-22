@@ -6,11 +6,26 @@ import (
 
 func GetESTNow() time.Time {
 	est, _ := time.LoadLocation("EST")
-	return GetTimelessDate(time.Now().In(est))
+	return time.Now().In(est)
 }
 
+// Basically returns the "effective" date - the last date in which the stock market was open?
+func GetTimelessESTOpenNow() time.Time {
+	estNow := GetESTNow()
+	if IsMarketOpen(estNow) {
+		return GetTimelessDate(estNow)
+	}
+	return GetTimelessDate(estNow.AddDate(0, 0, -1))
+}
+
+// Simple check to see if market is open (ignoring holidays)
 func IsMarketOpen(date time.Time) bool {
-	return int(date.Weekday()) != 0 && int(date.Weekday()) != 6
+	// Must be a weekday (i.e. monday - friday)
+	return int(date.Weekday()) >= 1 && int(date.Weekday()) <= 5 &&
+		// Hour must either be > 9 OR if its equal to 9, minute must be >= 30
+		(date.Hour() > 9 || (date.Hour() == 9 && date.Minute() >= 30)) &&
+		// Hour must be < 4:00pm
+		date.Hour() < 16
 }
 
 func GetTimelessDate(date time.Time) time.Time {

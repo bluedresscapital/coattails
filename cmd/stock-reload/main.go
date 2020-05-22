@@ -50,7 +50,63 @@ func reloadCurrentDayStockPrices(i int, tickers []string, doneChan chan bool) {
 	doneChan <- true
 }
 
-func reloadStockPrices(parallelism int) {
+func reloadCurrentDayPortfolioHandler(i int, now time.Time, ports []int, doneChan chan bool) {
+	log.Printf("Worker %d loading ports: %v", i, ports)
+	for _, portId := range ports {
+		port, err := wardrobe.FetchPortfolioById(portId)
+		if err != nil {
+			log.Fatalf("error fetching portfolio %d: %v", portId, err)
+		}
+		pv, err := portfolios.ReloadCurrentDay(*port)
+		if err != nil {
+			log.Fatalf("error reloading current day portfolio: %v", err)
+		}
+		res := make(map[int]portfolios.PortValueDiff)
+		res[portId] = *pv
+		// Update minutely portfolio values
+		if now.Minute()%5 == 0 {
+			log.Printf("Worker %d saving daily portfolio value snapshots for portfolio %d", i, portId)
+			err = wardrobe.InsertDailyPortValue(wardrobe.DailyPortVal{
+				PortId: portId,
+				Date:   now,
+				Value:  (*pv).CurrVal,
+			})
+			if err != nil {
+				log.Fatalf("error saving daily port value: %v", err)
+			}
+		}
+		err = socks.PublishFromServer(routes.GetChannelFromUserId(port.UserId), "RELOAD_CURRENT_PORT_VALUES", res)
+		if err != nil {
+			log.Fatalf("error publishing current port values: %v", err)
+		}
+	}
+	doneChan <- true
+}
+
+func reloadCurrentDayPortfolios(parallelism int, now time.Time) {
+	ports, err := wardrobe.FetchAllPortfolioIds()
+	if err != nil {
+		log.Fatalf("error fetching portfolio ids: %v", err)
+	}
+	portBuckets := partitionPorts(ports, parallelism)
+	doneChan := make(chan bool)
+	for i, portBucket := range portBuckets {
+		go reloadCurrentDayPortfolioHandler(i, now, portBucket, doneChan)
+	}
+	done := 0
+L:
+	for {
+		select {
+		case <-doneChan:
+			done++
+			if done == parallelism {
+				break L
+			}
+		}
+	}
+}
+
+func reloadStockPrices(parallelism int, now time.Time) {
 	// Reload all current day (relevant) stock prices
 	tickers, err := wardrobe.FetchNonZeroQuantityPositions()
 	if err != nil {
@@ -73,11 +129,6 @@ L:
 			}
 		}
 	}
-	est, err := time.LoadLocation("EST")
-	if err != nil {
-		log.Fatalf("error loading EST location: %v", err)
-	}
-	now := time.Now().In(est)
 	// Only check if we have a stale price after 10am EST. The reason for the 10am check is we assume
 	// w/e stock api we use will have all prices up to including the previous day for any given stock after 10am.
 	if now.Hour() > 10 {
@@ -91,27 +142,8 @@ L:
 		// Reload positions + publish
 		// Reload portfolio performances + publish
 	}
-	// Upsert portfolio values
-	ports, err := wardrobe.FetchAllPortfolioIds()
-	if err != nil {
-		log.Fatalf("error fetching portfolio ids: %v", err)
-	}
-	for _, portId := range ports {
-		port, err := wardrobe.FetchPortfolioById(portId)
-		if err != nil {
-			log.Fatalf("error fetching portfolio %d: %v", portId, err)
-		}
-		pv, err := portfolios.ReloadCurrentDay(*port)
-		if err != nil {
-			log.Fatalf("error reloading current day portfolio: %v", err)
-		}
-		res := make(map[int]portfolios.PortValueDiff)
-		res[portId] = *pv
-		err = socks.PublishFromServer(routes.GetChannelFromUserId(port.UserId), "RELOAD_CURRENT_PORT_VALUES", res)
-		if err != nil {
-			log.Fatalf("error publishing current port values: %v", err)
-		}
-	}
+	// Upsert portfolio values + update daily portfolio value if applicable
+	reloadCurrentDayPortfolios(parallelism, now)
 }
 
 func removeTickerDuplicates(tickers []string) []string {
@@ -141,7 +173,21 @@ func partitionTickers(tickers []string, buckets int) [][]string {
 	return ret
 }
 
+func partitionPorts(ports []int, buckets int) [][]int {
+	ret := make([][]int, buckets)
+	for i := 0; i < buckets; i++ {
+		ret[i] = make([]int, 0)
+	}
+	counter := 0
+	for _, id := range ports {
+		ret[counter%buckets] = append(ret[counter%buckets], id)
+		counter++
+	}
+	return ret
+}
+
 func main() {
+	now := util.GetESTNow()
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
@@ -161,5 +207,5 @@ func main() {
 		pgHost, pgPort, pgUser, pgPwd, pgDb))
 	wardrobe.InitCache(cacheHost)
 	secrets.InitSundress(loadBdcKeyFromFile, bdcKeyFile)
-	reloadStockPrices(parallelism)
+	reloadStockPrices(parallelism, now)
 }

@@ -32,20 +32,23 @@ type CreatePortfolioRequest struct {
 func fetchPortfolioValuesHandler(userId *int, w http.ResponseWriter, r *http.Request) {
 	ports, err := wardrobe.FetchPortfoliosByUserId(*userId)
 	if err != nil {
+		log.Printf("Fetching portfolios for user %d failed: %v", *userId, err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	now := util.GetESTNow()
+	now := util.GetTimelessESTOpenNow()
 	res := make(map[int]portfolios.PortValueDiff)
 	// TODO - look into fixing edge case where portfolio values len is < 2??
 	for _, port := range ports {
 		currPv, err := wardrobe.FetchPortfolioValueOnDay(port.Id, now)
 		if err != nil {
+			log.Printf("fetching port value on day %s failed: %v", now, err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 		prevPv, err := wardrobe.FetchPortfolioValueOnDay(port.Id, now.AddDate(0, 0, -1))
 		if err != nil {
+			log.Printf("fetching prev port value on day %s failed: %v", now.AddDate(0, 0, -1), err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}

@@ -242,3 +242,15 @@ func FetchAllPortfolioIds() ([]int, error) {
 	}
 	return ids, nil
 }
+
+type DailyPortVal struct {
+	PortId int             `json:"port_id"`
+	Date   time.Time       `json:"date"`
+	Value  decimal.Decimal `json:"value"`
+}
+
+func InsertDailyPortValue(dpv DailyPortVal) error {
+	_, err := db.Exec(`INSERT INTO daily_portfolio_values (port_id, date, value) VALUES ($1, $2, $3)`,
+		dpv.PortId, dpv.Date, dpv.Value)
+	return err
+}

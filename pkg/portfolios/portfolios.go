@@ -65,7 +65,7 @@ func ReloadCurrentDay(portfolio wardrobe.Portfolio) (*PortValueDiff, error) {
 			stockVal = stockVal.Add(stockPrice.Mul(p.Quantity))
 		}
 	}
-	now := util.GetESTNow()
+	now := util.GetTimelessESTOpenNow()
 	currPv, err := wardrobe.FetchPortfolioValueOnDay(portfolio.Id, now)
 	if err != nil {
 		return nil, err
