@@ -55,11 +55,11 @@ func reloadCurrentDayPortfolioHandler(i int, now time.Time, ports []int, doneCha
 	for _, portId := range ports {
 		port, err := wardrobe.FetchPortfolioById(portId)
 		if err != nil {
-			log.Fatalf("error fetching portfolio %d: %v", portId, err)
+			log.Printf("error fetching portfolio %d: %v", portId, err)
 		}
 		pv, err := portfolios.ReloadCurrentDay(*port)
 		if err != nil {
-			log.Fatalf("error reloading current day portfolio: %v", err)
+			log.Printf("error reloading current day portfolio: %v", err)
 		}
 		res := make(map[int]portfolios.PortValueDiff)
 		res[portId] = *pv
@@ -72,12 +72,12 @@ func reloadCurrentDayPortfolioHandler(i int, now time.Time, ports []int, doneCha
 				Value:  (*pv).CurrVal,
 			})
 			if err != nil {
-				log.Fatalf("error saving daily port value: %v", err)
+				log.Printf("error saving daily port value: %v", err)
 			}
 		}
 		err = socks.PublishFromServer(routes.GetChannelFromUserId(port.UserId), "RELOAD_CURRENT_PORT_VALUES", res)
 		if err != nil {
-			log.Fatalf("error publishing current port values: %v", err)
+			log.Printf("error publishing current port values: %v", err)
 		}
 	}
 	doneChan <- true
@@ -86,7 +86,7 @@ func reloadCurrentDayPortfolioHandler(i int, now time.Time, ports []int, doneCha
 func reloadCurrentDayPortfolios(parallelism int, now time.Time) {
 	ports, err := wardrobe.FetchAllPortfolioIds()
 	if err != nil {
-		log.Fatalf("error fetching portfolio ids: %v", err)
+		log.Printf("error fetching portfolio ids: %v", err)
 	}
 	portBuckets := partitionPorts(ports, parallelism)
 	doneChan := make(chan bool)
@@ -110,7 +110,7 @@ func reloadStockPrices(parallelism int, now time.Time) {
 	// Reload all current day (relevant) stock prices
 	tickers, err := wardrobe.FetchNonZeroQuantityPositions()
 	if err != nil {
-		log.Fatalf("error fetching non zero ticker positions: %v", err)
+		log.Printf("error fetching non zero ticker positions: %v", err)
 	}
 	tickers = removeTickerDuplicates(tickers)
 	tickerPartitions := partitionTickers(tickers, parallelism)

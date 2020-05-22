@@ -254,3 +254,25 @@ func InsertDailyPortValue(dpv DailyPortVal) error {
 		dpv.PortId, dpv.Date, dpv.Value)
 	return err
 }
+
+func FetchDailyPortValuesByPortfolioId(portId int) ([]DailyPortVal, error) {
+	rows, err := db.Query(`
+		SELECT port_id, date, value 
+		FROM daily_portfolio_values 
+		WHERE port_id=$1
+		ORDER BY date`, portId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	ret := make([]DailyPortVal, 0)
+	for rows.Next() {
+		var dpv DailyPortVal
+		err = rows.Scan(&dpv.PortId, &dpv.Date, &dpv.Value)
+		if err != nil {
+			return nil, err
+		}
+		ret = append(ret, dpv)
+	}
+	return ret, nil
+}

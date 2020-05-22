@@ -21,12 +21,33 @@ func registerPortfolioRoutes(r *mux.Router) {
 	s.HandleFunc("/create", authMiddleware(createPortfolioHandler)).Methods("POST")
 	s.HandleFunc("/history", authMiddleware(fetchPortfolioHistoryHandler)).Methods("GET")
 	s.HandleFunc("/values", authMiddleware(fetchPortfolioValuesHandler)).Methods("GET")
+	s.HandleFunc("/daily_values", authMiddleware(fetchDailyPortfolioValuesHandler)).Methods("GET")
 	s.HandleFunc("/history/reload", portAuthMiddleware(reloadPortfolioHistoryHandler)).Methods("POST")
 }
 
 type CreatePortfolioRequest struct {
 	Name string `json:"name"`
 	Type string `json:"type"`
+}
+
+func fetchDailyPortfolioValuesHandler(userId *int, w http.ResponseWriter, r *http.Request) {
+	ports, err := wardrobe.FetchPortfoliosByUserId(*userId)
+	if err != nil {
+		log.Printf("Fetching portfolios for user %d failed: %v", *userId, err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	ret := make(map[int][]wardrobe.DailyPortVal)
+	for _, port := range ports {
+		dpvs, err := wardrobe.FetchDailyPortValuesByPortfolioId(port.Id)
+		if err != nil {
+			log.Printf("Error fetching daily port values for port %d: %v", port.Id, err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		ret[port.Id] = dpvs
+	}
+	writeJsonResponse(w, ret)
 }
 
 func fetchPortfolioValuesHandler(userId *int, w http.ResponseWriter, r *http.Request) {

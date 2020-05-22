@@ -38,13 +38,13 @@ var (
 func reloadPortfolios() {
 	ids, err := wardrobe.FetchAllPortfolioIds()
 	if err != nil {
-		log.Fatalf("error fetching portfolio ids: %v", err)
+		log.Printf("error fetching portfolio ids: %v", err)
 	}
 	for _, id := range ids {
 		log.Printf("Reloading portfolio %d", id)
 		port, err := wardrobe.FetchPortfolioById(id)
 		if err != nil {
-			log.Fatalf("error fetching portfolio by id: %v", err)
+			log.Printf("error fetching portfolio by id: %v", err)
 		}
 		var orderAPI orders.OrderAPI
 		var transferAPI transfers.TransferAPI
@@ -60,23 +60,23 @@ func reloadPortfolios() {
 			// Just check if we have uncommitted transfers or orders
 			needsOrderReload, err = wardrobe.HasUncommittedOrders(port.Id)
 			if err != nil {
-				log.Fatalf("error checking for uncommitted orders: %v", err)
+				log.Printf("error checking for uncommitted orders: %v", err)
 			}
 			needsTransferReload, err = wardrobe.HasUncommittedTransfers(port.Id)
 			if err != nil {
-				log.Fatalf("error checking for uncommitted transfers: %v", err)
+				log.Printf("error checking for uncommitted transfers: %v", err)
 			}
 		}
 		if orderAPI != nil {
 			needsOrderReload, err = orders.ReloadOrders(orderAPI, stockings.FingoPack{})
 			if err != nil {
-				log.Fatalf("error reloading orders: %v", err)
+				log.Printf("error reloading orders: %v", err)
 			}
 		}
 		if transferAPI != nil {
 			needsTransferReload, err = transfers.ReloadTransfers(transferAPI)
 			if err != nil {
-				log.Fatalf("error reloading transfers: %v", err)
+				log.Printf("error reloading transfers: %v", err)
 			}
 		}
 		depsChanged := make([]diapers.Data, 0)
@@ -88,7 +88,7 @@ func reloadPortfolios() {
 		}
 		err = diapers.BulkReloadDepsAndPublish(depsChanged, port.Id, port.UserId, routes.GetChannelFromUserId(port.UserId))
 		if err != nil {
-			log.Fatalf("error reloading deps for %v: %v", depsChanged, err)
+			log.Printf("error reloading deps for %v: %v", depsChanged, err)
 		}
 	}
 }

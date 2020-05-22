@@ -66,21 +66,24 @@ func ReloadCurrentDay(portfolio wardrobe.Portfolio) (*PortValueDiff, error) {
 		}
 	}
 	now := util.GetTimelessESTOpenNow()
-	currPv, err := wardrobe.FetchPortfolioValueOnDay(portfolio.Id, now)
-	if err != nil {
-		return nil, err
-	}
 	prevPv, err := wardrobe.FetchPortfolioValueOnDay(portfolio.Id, now.AddDate(0, 0, -1))
 	if err != nil {
 		return nil, err
 	}
+	currPv, err := wardrobe.FetchPortfolioValueOnDay(portfolio.Id, now)
+	if err != nil {
+		// if there isn't a current day portfolio value yet, assume its the same as yesterday in terms
+		// of cash
+		currPv = prevPv
+	}
+
 	currVal := currPv.Cash.Add(stockVal).Sub(currPv.DailyNetDeposited)
 	prevVal := prevPv.Cash.Add(prevPv.StockValue)
 	dailyChange := currVal.Div(prevVal)
 	cumChange := prevPv.CumChange.Mul(dailyChange)
 	newPv := wardrobe.PortValue{
 		PortId:            portfolio.Id,
-		Date:              currPv.Date,
+		Date:              now,
 		DailyNetDeposited: currPv.DailyNetDeposited,
 		Cash:              currPv.Cash,
 		StockValue:        stockVal,

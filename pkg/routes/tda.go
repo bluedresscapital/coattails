@@ -19,6 +19,7 @@ func registerTDARoutes(r *mux.Router) {
 	s := r.PathPrefix("/tda").Subrouter()
 	s.HandleFunc("", authMiddleware(fetchTDAccountsHandler)).Methods("GET")
 	s.HandleFunc("/portfolio/create", authMiddleware(createTDPortfolioHandler)).Methods("POST")
+	s.HandleFunc("/portfolio/update", authMiddleware(updateTDPortfolioHandler)).Methods("POST")
 }
 
 func fetchTDAccountsHandler(userId *int, w http.ResponseWriter, r *http.Request) {
@@ -29,6 +30,48 @@ func fetchTDAccountsHandler(userId *int, w http.ResponseWriter, r *http.Request)
 		return
 	}
 	writeJsonResponse(w, accounts)
+}
+
+type UpdateTDPortRequest struct {
+	PortId     int    `json:"port_id"`
+	Name       string `json:"name"`
+	AccountNum string `json:"account_num"`
+	Code       string `json:"code"`
+}
+
+func updateTDPortfolioHandler(userId *int, w http.ResponseWriter, r *http.Request) {
+	var req UpdateTDPortRequest
+	err := decodeJSONBody(w, r, &req)
+	if err != nil {
+		log.Printf("Error decoding update td port request: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	port, err := wardrobe.FetchPortfolioById(req.PortId)
+	err = validateTdaUsage(*port, *userId)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	auth, err := tda.FetchRefreshTokenUsingAuthCode(req.Code, tda.ClientId)
+	if err != nil {
+		log.Printf("Error fetching refresh token: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	err = wardrobe.UpdateTDPortfolio(port.TDAccountId, *userId, req.AccountNum, auth.RefreshToken)
+	if err != nil {
+		log.Printf("Error updating td port: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	portfolios, err := wardrobe.FetchPortfoliosByUserId(*userId)
+	if err != nil {
+		log.Printf("Error fetching all portfolios by user: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	writeJsonResponse(w, portfolios)
 }
 
 type CreateTDPortRequest struct {

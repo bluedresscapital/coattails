@@ -126,7 +126,7 @@ func ScrapeTransactions(authTok string, accountId string) (TDTransactions, error
 	var orders TDTransactions
 	err = json.Unmarshal(body, &orders)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error unmarshalling %s into TDTransactions", string(body))
 	}
 	return orders, nil
 }

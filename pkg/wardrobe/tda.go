@@ -42,6 +42,23 @@ func CreateTDPortfolio(userId int, name string, accountNum string, refreshToken 
 	return tx.Commit()
 }
 
+func UpdateTDPortfolio(tdAccountId int, userId int, accountNum string, refreshToken string) error {
+	refreshCipher, err := secrets.BdcEncrypt(refreshToken)
+	if err != nil {
+		return err
+	}
+	accountNumHash := secrets.Hash(accountNum)
+	accountNumCipher, err := secrets.BdcEncrypt(accountNum)
+	if err != nil {
+		return err
+	}
+	_, err = db.Exec(`
+	UPDATE tda_accounts 
+	SET account_num_hash=$1, account_num_cipher=$2, refresh_token_cipher=$3
+	WHERE id=$4 AND user_id=$5`, accountNumHash[:], accountNumCipher, refreshCipher, tdAccountId, userId)
+	return err
+}
+
 // Updates tda account
 func UpdateRefreshToken(accountId int, refreshToken string) error {
 	refreshCipher, err := secrets.BdcEncrypt(refreshToken)
