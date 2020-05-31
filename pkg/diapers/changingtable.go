@@ -49,6 +49,22 @@ func ReloadDepsAndPublish(data Data, portId int, userId int, channel string) err
 			return reloadPortfolioAndPublish(portId, userId, channel)
 		}
 	}
+	switch data {
+	case Order:
+		log.Printf("Committing orders for port %d", portId)
+		err := wardrobe.SetOrdersCommitted(portId)
+		if err != nil {
+			return err
+		}
+	case Transfer:
+		log.Printf("Committing transfers for port %d", portId)
+		err := wardrobe.SetTransfersCommitted(portId)
+		if err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("unsupported dep change: %v", data)
+	}
 	return nil
 }
 

@@ -3,7 +3,10 @@ package wardrobe
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"time"
+
+	"github.com/bluedresscapital/coattails/pkg/util"
 
 	"github.com/lib/pq"
 
@@ -275,4 +278,11 @@ func FetchDailyPortValuesByPortfolioId(portId int) ([]DailyPortVal, error) {
 		ret = append(ret, dpv)
 	}
 	return ret, nil
+}
+
+func DeletePrevDailyPortValues() error {
+	now := util.GetTimelessDate(time.Now())
+	log.Printf("Deleting all daily port values < %s", now)
+	_, err := db.Exec(`DELETE FROM daily_portfolio_values WHERE date < $1`, now)
+	return err
 }
