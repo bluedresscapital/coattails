@@ -88,7 +88,7 @@ func reloadCurrentDayPortfolios(parallelism int, now time.Time) {
 	if err != nil {
 		log.Printf("error fetching portfolio ids: %v", err)
 	}
-	portBuckets := partitionPorts(ports, parallelism)
+	portBuckets := util.PartitionPorts(ports, parallelism)
 	doneChan := make(chan bool)
 	for i, portBucket := range portBuckets {
 		go reloadCurrentDayPortfolioHandler(i, now, portBucket, doneChan)
@@ -113,7 +113,7 @@ func reloadStockPrices(parallelism int, now time.Time) {
 		log.Printf("error fetching non zero ticker positions: %v", err)
 	}
 	tickers = removeTickerDuplicates(tickers)
-	tickerPartitions := partitionTickers(tickers, parallelism)
+	tickerPartitions := util.PartitionTickers(tickers, parallelism)
 	doneChan := make(chan bool)
 	for i, part := range tickerPartitions {
 		go reloadCurrentDayStockPrices(i, part, doneChan)
@@ -156,32 +156,6 @@ func removeTickerDuplicates(tickers []string) []string {
 	ret := make([]string, 0)
 	for t := range tickerSet {
 		ret = append(ret, t)
-	}
-	return ret
-}
-
-func partitionTickers(tickers []string, buckets int) [][]string {
-	ret := make([][]string, buckets)
-	for i := 0; i < buckets; i++ {
-		ret[i] = make([]string, 0)
-	}
-	counter := 0
-	for _, t := range tickers {
-		ret[counter%buckets] = append(ret[counter%buckets], t)
-		counter++
-	}
-	return ret
-}
-
-func partitionPorts(ports []int, buckets int) [][]int {
-	ret := make([][]int, buckets)
-	for i := 0; i < buckets; i++ {
-		ret[i] = make([]int, 0)
-	}
-	counter := 0
-	for _, id := range ports {
-		ret[counter%buckets] = append(ret[counter%buckets], id)
-		counter++
 	}
 	return ret
 }

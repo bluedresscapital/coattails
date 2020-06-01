@@ -15,5 +15,5 @@ require (
 	github.com/piquette/finance-go v1.0.0
 	github.com/rs/cors v1.7.0
 	github.com/shopspring/decimal v1.2.0
-	golang.org/x/net v0.0.0-20200425230154-ff2c4b7c35a0 // indirect
+	golang.org/x/net v0.0.0-20200425230154-ff2c4b7c35a0
 )

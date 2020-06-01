@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/bluedresscapital/coattails/pkg/util"
+
 	"github.com/bluedresscapital/coattails/pkg/routes"
 
 	"github.com/bluedresscapital/coattails/pkg/diapers"
@@ -33,6 +35,7 @@ var (
 	cacheHost          string
 	loadBdcKeyFromFile bool
 	bdcKeyFile         string
+	parallelism        int
 )
 
 func reloadPortfolios() {
@@ -93,6 +96,71 @@ func reloadPortfolios() {
 	}
 }
 
+func reloadStockIndustryBuckets(tickers []string, doneChan chan map[string][]string) {
+	res := make(map[string][]string)
+	for _, t := range tickers {
+		collections, err := stockings.ScrapeCollections(t)
+		if err != nil {
+			log.Printf("errored scraping collections for %s: %v", t, err)
+		}
+		log.Printf("%s: %v", t, collections)
+		res[t] = collections
+	}
+	doneChan <- res
+}
+
+func reloadStockIndustries(parallelism int) {
+	tickers, err := wardrobe.FetchStaleStockCollections()
+	if err != nil {
+		log.Printf("error fetching stale stock collectionMap: %v", err)
+	}
+	tickerBuckets := util.PartitionTickers(tickers, parallelism)
+	doneChan := make(chan map[string][]string)
+	for _, bucket := range tickerBuckets {
+		go reloadStockIndustryBuckets(bucket, doneChan)
+	}
+	done := 0
+	// maps a ticker to a list of collection names
+	collectionMap := make(map[string][]string)
+	collectionSet := make(map[string]bool)
+L:
+	for {
+		select {
+		case res := <-doneChan:
+			for t, collects := range res {
+				collectionMap[t] = collects
+				for _, c := range collects {
+					collectionSet[c] = true
+				}
+			}
+			done++
+			if done == parallelism {
+				break L
+			}
+		}
+	}
+	collections := make([]string, 0)
+	for c := range collectionSet {
+		collections = append(collections, c)
+	}
+	collectionIds, err := wardrobe.UpsertCollections(collections)
+	if err != nil {
+		log.Printf("error upserting collections: %v", err)
+	}
+	for t, collects := range collectionMap {
+		collectIds := make([]int, 0)
+		for _, c := range collects {
+			collectIds = append(collectIds, collectionIds[c])
+		}
+		log.Printf("Upserting stock collections for %s", t)
+		err = wardrobe.UpsertStockCollections(collectIds, t)
+		if err != nil {
+			log.Printf("error upserting stock collection edge for %s with collections %v: %v", t, collectIds, err)
+		}
+	}
+	log.Print("Done reloading stock industries!")
+}
+
 func main() {
 	err := godotenv.Load()
 	if err != nil {
@@ -106,6 +174,7 @@ func main() {
 	flag.StringVar(&cacheHost, "redis-host", "localhost", "redis host")
 	flag.BoolVar(&loadBdcKeyFromFile, "load-bdc-key-from-file", false, "flag for whether or not we should get bdc key from file")
 	flag.StringVar(&bdcKeyFile, "bdc-key-file", "", "file location of bdc-key. Required if load-bdc-key-from-file is set")
+	flag.IntVar(&parallelism, "parallelism", 10, "parallelism")
 	flag.Parse()
 	// Initialize singleton instances after parsing flag
 	wardrobe.InitDB(fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
@@ -113,4 +182,5 @@ func main() {
 	wardrobe.InitCache(cacheHost)
 	secrets.InitSundress(loadBdcKeyFromFile, bdcKeyFile)
 	reloadPortfolios()
+	reloadStockIndustries(parallelism)
 }
