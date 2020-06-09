@@ -50,7 +50,8 @@ type PortValueDiff struct {
 // Basically calculates stock value for current day, then daily_change and cum_change
 // Assume no changes in cash, otherwise we'd be reloading entire portfolio history due to new transfer
 func ReloadCurrentDay(portfolio wardrobe.Portfolio) (*PortValueDiff, error) {
-	log.Printf("Reloading current day portfolio for %d", portfolio.Id)
+	now := util.GetTimelessESTOpenNow()
+	log.Printf("Reloading current day portfolio for %d on %s", portfolio.Id, now)
 	positions, err := wardrobe.FetchPortfolioPositions(portfolio.Id)
 	if err != nil {
 		return nil, err
@@ -65,7 +66,6 @@ func ReloadCurrentDay(portfolio wardrobe.Portfolio) (*PortValueDiff, error) {
 			stockVal = stockVal.Add(stockPrice.Mul(p.Quantity))
 		}
 	}
-	now := util.GetTimelessESTOpenNow()
 	prevPv, err := wardrobe.FetchPortfolioValueOnDay(portfolio.Id, now.AddDate(0, 0, -1))
 	if err != nil {
 		return nil, err

@@ -105,3 +105,26 @@ func UpsertStockCollections(collectionIds []int, ticker string) error {
 	}
 	return nil
 }
+
+func FetchCollectionsFromTicker(ticker string) ([]string, error) {
+	rows, err := db.Query(`
+		SELECT c.name
+		FROM stocks s 
+		JOIN stock_collections sc ON s.id=sc.stock_id
+		JOIN collections c ON c.id=sc.collection_id
+		WHERE s.ticker=$1`, ticker)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	collections := make([]string, 0)
+	for rows.Next() {
+		var name string
+		err = rows.Scan(&name)
+		if err != nil {
+			return nil, err
+		}
+		collections = append(collections, name)
+	}
+	return collections, nil
+}

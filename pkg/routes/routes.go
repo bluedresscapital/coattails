@@ -30,4 +30,5 @@ func RegisterAllRoutes(r *mux.Router) {
 	registerAuthRoutes(r)
 
 	registerStockRoutes(r)
+	registerCollectionRoutes(r)
 }

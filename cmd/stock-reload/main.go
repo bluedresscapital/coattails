@@ -6,6 +6,10 @@ import (
 	"log"
 	"time"
 
+	"github.com/bluedresscapital/coattails/pkg/secrets"
+
+	"github.com/bluedresscapital/coattails/pkg/positions"
+
 	"github.com/bluedresscapital/coattails/pkg/routes"
 	"github.com/bluedresscapital/coattails/pkg/socks"
 
@@ -15,7 +19,6 @@ import (
 
 	"github.com/bluedresscapital/coattails/pkg/stockings"
 
-	"github.com/bluedresscapital/coattails/pkg/secrets"
 	"github.com/bluedresscapital/coattails/pkg/wardrobe"
 	"github.com/joho/godotenv"
 )
@@ -56,10 +59,12 @@ func reloadCurrentDayPortfolioHandler(i int, now time.Time, ports []int, doneCha
 		port, err := wardrobe.FetchPortfolioById(portId)
 		if err != nil {
 			log.Printf("error fetching portfolio %d: %v", portId, err)
+			continue
 		}
 		pv, err := portfolios.ReloadCurrentDay(*port)
 		if err != nil {
 			log.Printf("error reloading current day portfolio: %v", err)
+			continue
 		}
 		res := make(map[int]portfolios.PortValueDiff)
 		res[portId] = *pv
@@ -73,11 +78,19 @@ func reloadCurrentDayPortfolioHandler(i int, now time.Time, ports []int, doneCha
 			})
 			if err != nil {
 				log.Printf("error saving daily port value: %v", err)
+				continue
 			}
 		}
 		err = socks.PublishFromServer(routes.GetChannelFromUserId(port.UserId), "RELOAD_CURRENT_PORT_VALUES", res)
 		if err != nil {
 			log.Printf("error publishing current port values: %v", err)
+			continue
+		}
+		// Reload positions data
+		err = positions.Reload(portId, stockings.FingoPack{})
+		if err != nil {
+			log.Printf("error reloading portfolio positions: %v", err)
+			continue
 		}
 	}
 	doneChan <- true
@@ -142,7 +155,7 @@ L:
 		// Reload positions + publish
 		// Reload portfolio performances + publish
 	}
-	// Upsert portfolio values + update daily portfolio value if applicable
+	// Upsert portfolio values + update daily portfolio value if applicable, Update positions
 	reloadCurrentDayPortfolios(parallelism, now)
 }
 
